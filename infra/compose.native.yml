@@ -1,0 +1,37 @@
+# Deliberately NOT labelled qualified. Both containers share the PostgreSQL
+# network namespace; all application endpoints remain loopback-bound.
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: ilc_demo
+      POSTGRES_USER: ilc_demo
+      POSTGRES_PASSWORD: ${ILC_DEMO_DB_PASSWORD:?Set a disposable local demo password outside Git}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ilc_demo -d ilc_demo"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+    ports:
+      - "127.0.0.1:55432:5432"
+    volumes:
+      - demo-db:/var/lib/postgresql/data
+  qualify:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.native
+    network_mode: "service:postgres"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ILC_ALLOW_NATIVE_DEMO: "1"
+      ILC_SOURCE_DSN: postgresql://ilc_demo:${ILC_DEMO_DB_PASSWORD}@127.0.0.1:5432/ilc_demo
+      ILC_STATE_DSN: postgresql+psycopg://ilc_demo:${ILC_DEMO_DB_PASSWORD}@127.0.0.1:5432/ilc_demo
+      SPARK_LOCAL_IP: "127.0.0.1"
+      TZ: "UTC"
+    volumes:
+      - demo-work:/work
+volumes:
+  demo-db:
+  demo-work:

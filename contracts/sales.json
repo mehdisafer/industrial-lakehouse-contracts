@@ -1,0 +1,222 @@
+{
+  "schema_version": "ilc-contract/1",
+  "standard_conformance": "NOT_ASSESSED_ODCS",
+  "contract_id": "synthetic.sales-fulfillment",
+  "version": "0.1.0",
+  "owner_role": "synthetic-data-owner",
+  "classification": "PUBLIC_SYNTHETIC",
+  "sites": [
+    "SITE_A",
+    "SITE_B",
+    "SITE_C"
+  ],
+  "gold_model": "sales_fulfillment_v1",
+  "publication_policy": "last_accepted_batch_only",
+  "entities": {
+    "customers": {
+      "primary_key": [
+        "customer_id"
+      ],
+      "fields": [
+        {
+          "name": "customer_id",
+          "type": "string",
+          "nullable": false
+        },
+        {
+          "name": "site_id",
+          "type": "string",
+          "nullable": false,
+          "enum": [
+            "SITE_A",
+            "SITE_B",
+            "SITE_C"
+          ]
+        },
+        {
+          "name": "customer_label",
+          "type": "string",
+          "nullable": false
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp_utc",
+          "nullable": false
+        }
+      ],
+      "watermark": "updated_at",
+      "owner_role": "synthetic-data-owner",
+      "classification": "PUBLIC_SYNTHETIC"
+    },
+    "products": {
+      "primary_key": [
+        "product_id"
+      ],
+      "fields": [
+        {
+          "name": "product_id",
+          "type": "string",
+          "nullable": false
+        },
+        {
+          "name": "product_label",
+          "type": "string",
+          "nullable": false
+        },
+        {
+          "name": "category",
+          "type": "string",
+          "nullable": false
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp_utc",
+          "nullable": false
+        }
+      ],
+      "watermark": "updated_at",
+      "owner_role": "synthetic-data-owner",
+      "classification": "PUBLIC_SYNTHETIC"
+    },
+    "orders": {
+      "primary_key": [
+        "order_id"
+      ],
+      "fields": [
+        {
+          "name": "order_id",
+          "type": "string",
+          "nullable": false
+        },
+        {
+          "name": "customer_id",
+          "type": "string",
+          "nullable": false
+        },
+        {
+          "name": "site_id",
+          "type": "string",
+          "nullable": false,
+          "enum": [
+            "SITE_A",
+            "SITE_B",
+            "SITE_C"
+          ]
+        },
+        {
+          "name": "currency",
+          "type": "string",
+          "nullable": false,
+          "enum": [
+            "EUR"
+          ]
+        },
+        {
+          "name": "promised_at",
+          "type": "timestamp_utc",
+          "nullable": false
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp_utc",
+          "nullable": false
+        }
+      ],
+      "watermark": "updated_at",
+      "owner_role": "synthetic-data-owner",
+      "classification": "PUBLIC_SYNTHETIC"
+    },
+    "order_lines": {
+      "primary_key": [
+        "order_id",
+        "line_id"
+      ],
+      "fields": [
+        {
+          "name": "order_id",
+          "type": "string",
+          "nullable": false
+        },
+        {
+          "name": "line_id",
+          "type": "integer",
+          "nullable": false,
+          "min": 1
+        },
+        {
+          "name": "product_id",
+          "type": "string",
+          "nullable": false
+        },
+        {
+          "name": "quantity",
+          "type": "integer",
+          "nullable": false,
+          "min": 1
+        },
+        {
+          "name": "unit_price",
+          "type": "decimal(18,2)",
+          "nullable": false,
+          "min": 0
+        },
+        {
+          "name": "amount",
+          "type": "decimal(18,2)",
+          "nullable": false,
+          "min": 0
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp_utc",
+          "nullable": false
+        }
+      ],
+      "watermark": "updated_at",
+      "owner_role": "synthetic-data-owner",
+      "classification": "PUBLIC_SYNTHETIC"
+    },
+    "shipments": {
+      "primary_key": [
+        "shipment_id"
+      ],
+      "fields": [
+        {
+          "name": "shipment_id",
+          "type": "string",
+          "nullable": false
+        },
+        {
+          "name": "order_id",
+          "type": "string",
+          "nullable": false
+        },
+        {
+          "name": "line_id",
+          "type": "integer",
+          "nullable": false,
+          "min": 1
+        },
+        {
+          "name": "quantity",
+          "type": "integer",
+          "nullable": false,
+          "min": 1
+        },
+        {
+          "name": "delivered_at",
+          "type": "timestamp_utc",
+          "nullable": false
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp_utc",
+          "nullable": false
+        }
+      ],
+      "watermark": "updated_at",
+      "owner_role": "synthetic-data-owner",
+      "classification": "PUBLIC_SYNTHETIC"
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "api_url": "http://127.0.0.1:8585/api",
+  "service_name": "ilc_demo",
+  "database_prefix": "ilc_portfolio",
+  "owner_teams": {
+    "synthetic-data-owner": "ilc_data_owners"
+  },
+  "classification_tag": "ILCSynthetic.PUBLIC_SYNTHETIC",
+  "server_version": "1.12.0"
+}
