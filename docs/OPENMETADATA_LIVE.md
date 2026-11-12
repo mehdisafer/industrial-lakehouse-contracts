@@ -6,6 +6,31 @@ then sends actual HTTP requests to OpenMetadata 1.12.0. This is not an emulator,
 and it does not rerun or claim a new combined Spark/catalogue qualification.
 The native G2 evidence at `fc1a928` remains unchanged.
 
+## Observed checkpoint — 13 November 2026 (Europe/Paris)
+
+**Both catalogue and reference jobs report SUCCESS on
+`cd09de03d658cb66d5aaa29a8ec677fd17a3f977`.** The catalogue success was posted
+at 2026-11-12 23:43:13 UTC. The configured live harness completed; private
+artifact contents, actual image digests, role/readback traces, cleanup outcomes
+and credit usage have not yet been independently inspected. **Final G3a
+acceptance remains open in issue #4.**
+
+- [Successful catalogue job](https://app.circleci.com/workflow/44a92cbe-4817-45b8-8df2-70e106367dc9/job/167d2f85-ca05-45a5-a6a7-937bf513354b)
+- [Successful reference job](https://app.circleci.com/workflow/a92aa335-2ecb-4898-ae2a-64855831f898/job/f2c4bd4b-baea-40d1-ab3d-ef6d76e82739)
+
+The initial catalogue job at `a99c173` failed; its exact failed step remains
+unread. The corrective commit fixes two defects established from source/offline
+reproduction: gzip double decoding and the deprecated executable-suite check.
+Later success is not proof of the unread first failure's cause. Two catalogue
+attempts and two reference jobs were triggered; no additional native/Spark run.
+
+Local targeted checks passed 65 cases (33 harness, 32 publisher), using synthetic
+transport/receipt inputs where labelled. An earlier recovered-V3 materialization
+run passed 219 cases with one native skip; it did not contain the 41 previously
+added GitHub CI tests and is not the complete current hosted suite. Exact hosted
+reference test counts are not inferred. The documentation-only checkpoint does
+not trigger another run; inspect the existing artifacts instead.
+
 ## Reproducible deployment, not a shared environment
 
 `infra/compose.openmetadata.yml` starts PostgreSQL 16, Elasticsearch 9.3.0,
@@ -108,8 +133,8 @@ The local materialization contains original V3 sources plus the new harness; the
 previously added Java/native-evidence CI tests remain on GitHub and are exercised
 by the reference job, not falsely included in a local test count.
 
-G3a is **implemented, awaiting live execution and review** at this document's
-creation. The PR/issue record the observed exact-head outcomes. Raw native JUnit
+G3a is **implemented with successful live CI; private artifact review remains
+pending** on the exact runtime commit above. The PR/issue retain both attempts. Raw native JUnit
 archival and credit accounting remain G2 reservations; they do not trigger another
 Spark run. Fabric/Power BI remains an independent authorized-tenant gate. P05/P03
 stay queued; `main`, repository visibility and licensing are unchanged.

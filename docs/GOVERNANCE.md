@@ -88,18 +88,27 @@ database restrictions. That pathway is not executed or qualified in this deliver
 observation, not a deployment verdict. Preserve the peer identity/environment in
 any external qualification report.
 
-## Evidence still required
+## Real-server execution and review boundary
 
-Actual server startup/version, service and tag prerequisites, positive/negative
-server permissions, entity and column readback, lineage display, DQ result
-readback, interrupted real-server recovery and catalog retention. Unit tests,
-MockTransport and a real HTTP server running our emulator satisfy none of those
-product-specific gates.
+The separately scoped CircleCI catalogue job now reports **success** on
+`cd09de03d658cb66d5aaa29a8ec677fd17a3f977`, alongside reference success. Its
+mandatory live harness provisions the actual product, authenticates distinct
+roles, publishes and rereads two generations, exercises permission denials,
+replay, client-injected response loss and conflict preservation. The source
+profile is a new accepted reference generation; no Spark job is rerun.
+
+Final product acceptance still requires inspection of the private version/image,
+role, entity/column, lineage, DQ, basic-suite, HTTP-trace and artifact-hash evidence.
+A successful status is not a claim that those individual files were downloaded
+and reviewed. Unit/MockTransport/emulator tests remain separate offline evidence.
+Catalogue retention, SDK/Airflow connectors, TLS/SSO, high availability and actual
+UI inspection are outside this bounded API-publisher qualification.
 
 ## Real product qualification route
 
 The bounded, separate CircleCI deployment and live permission/replay/conflict
-scenarios are implemented in [OPENMETADATA_LIVE.md](OPENMETADATA_LIVE.md).
+scenarios and current successful-job checkpoint are described in
+[OPENMETADATA_LIVE.md](OPENMETADATA_LIVE.md).
 The input is a newly accepted reference-profile generation, not a repeated native
 Spark qualification. Existing emulator tests remain emulator evidence. The live
 route uses actual OpenMetadata 1.12.0 HTTP APIs, and its precise executed outcome
