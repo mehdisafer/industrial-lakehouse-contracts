@@ -22,7 +22,7 @@ docker compose -f infra/compose.native.yml run --build --rm qualify
 
 These commands are **not executed or validated by the delivered reference evidence**. They initialize new synthetic tables only. Do not substitute an existing operational database. Native module versions and container tags remain candidates, not a full immutable lock.
 
-The native pytest is skipped unless `ILC_NATIVE_TESTS=1`. When explicitly enabled it fails if dependencies/setup are absent; it never converts an unavailable provider into a pass. The original native pytest checks nominal transformation and replay. The additional `qualify_native.py` harness requires real dependencies, seeds separate fresh synthetic schemas per scenario, and is designed to exercise all six P01 cases, the final Delta path, hard child exit after synchronous target creation and authenticated HTTP reporting. It does not replace missing dependencies with mocks. It is not executed in this delivery.
+The native pytest is skipped unless `ILC_NATIVE_TESTS=1`. When explicitly enabled it fails if dependencies/setup are absent; it never converts an unavailable provider into a pass. The original native pytest checks nominal transformation and replay. The additional `qualify_native.py` harness requires real dependencies, seeds separate fresh synthetic schemas per scenario, and is designed to exercise all six P01 cases, the final Delta path, hard child exit after synchronous target creation and authenticated HTTP reporting. It does not replace missing dependencies with mocks. CircleCI now attempts this real path; its status and receipts must be read before claiming native qualification.
 
 ## Retention and cleanup
 
@@ -53,5 +53,18 @@ The final receipt uses `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1` because unrelated pyte
 plugins preinstalled in the authoring host stalled earlier attempts. The project
 has no required third-party pytest plugin; its conftest fixtures remain loaded.
 The early timed-out attempts are retained as attempts, not passing evidence. The
-same flag is explicit in the candidate reference workflow; hosted execution is
-still unverified.
+same flag is explicit in the CircleCI reference workflow. GitHub reports a
+successful reference status on `fc1a928`; private JUnit and evidence require
+separate inspection. No numerical hosted test count is inferred from that status.
+
+## CircleCI native operation and credit control
+
+The active configuration is described in [CI_CIRCLECI.md](CI_CIRCLECI.md). Ordinary feature pushes run only the reference job. A deliberate push to `qualify/p01-native-20261112`, or a pipeline with `run_native: true`, selects one native job. Do not make empty commits or rerun an unchanged failure before reading its diagnostic.
+
+The first native attempt on `9395f4f` failed. The source-established Java 11 incompatibility was corrected at `fc1a928` using plain Python and a verified Temurin 17 archive. The exact failed step of the first job remains unknown without its private logs. The corrected native attempt has its own evidence boundary.
+
+Read `native-diagnostics/attempt.json` first for last phase, exit code, source SHA and duration. Then inspect `java-install.json`, `environment.json`, `native-tests.log`, `native-qualification.log` and JUnit, when those stages were reached. Final acceptance additionally requires `verified-evidence.json` and the complete `native-evidence` receipts. Missing artifacts are not success.
+
+The 35-minute watchdog bounds the command, not image provisioning or artifact upload and not the account billing total. No paid refill or plan change is configured. After an unexplained failed attempt, obtain the CircleCI failure report rather than increase resources speculatively.
+
+Do not copy tokens into GitHub comments or chat. Runtime policies and source databases stay out of CI artifacts. The fixture PostgreSQL password is only for the isolated job service.
