@@ -45,8 +45,11 @@ PY
 }
 trap finish EXIT
 python --version
+phase=java_bootstrap
+timeout --kill-after=20s 4m python scripts/bootstrap_java.py --destination .runtime/java17 --receipt artifacts/native/java-install.json 2>&1 | tee artifacts/native/java-install.log
+export JAVA_HOME="$(python -c 'import json; print(json.load(open("artifacts/native/java-install.json"))["java_home"])')"
+export PATH="$JAVA_HOME/bin:$PATH"
 java -version
-export JAVA_HOME="$(dirname "$(dirname "$(readlink -f "$(command -v java)")")")"
 export PYSPARK_PYTHON="$(command -v python)"
 phase=install
 # No lockfile exists. Record the resolved environment; do not claim a locked build.
