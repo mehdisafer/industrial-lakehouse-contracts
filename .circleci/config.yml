@@ -1,0 +1,68 @@
+# P01 reference qualification. No secrets, vendor deployment or production access.
+version: 2.1
+
+parameters:
+  run_testsuite_doctor:
+    type: boolean
+    default: false
+
+jobs:
+  reference:
+    docker:
+      - image: cimg/python:3.13
+    resource_class: medium
+    environment:
+      PYTHONUTF8: "1"
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD: "1"
+      TZ: UTC
+    steps:
+      - checkout
+      - run:
+          name: Record toolchain and checked-out revision
+          command: |
+            python --version
+            python -m pip --version
+            git rev-parse HEAD
+      - run:
+          name: Install existing Python package and tests
+          command: python -m pip install -e '.[test]'
+      - run:
+          name: Compile Python source and tests
+          command: python -m compileall -q src tests scripts fabric
+      - run:
+          name: Validate metadata contracts
+          command: python -m ilc.cli validate
+      # Run doctor once as a separate, parameterized qualification.
+      # It executes tests, so default false avoids double work on every push.
+      - when:
+          condition: << pipeline.parameters.run_testsuite_doctor >>
+          steps:
+            - run:
+                name: Doctor - verify testsuite discovery, execution and JUnit
+                command: circleci testsuite doctor "p01 reference tests"
+      - run:
+          name: Run repository pytest regression suite with Smarter Testing
+          command: circleci testsuite run "p01 reference tests"
+      - store_test_results:
+          path: test-results
+      - run:
+          name: Execute reference synthetic 10000-row end-to-end scenario
+          command: python scripts/qualify_reference.py --output .runtime/circleci-reference --rows 10000
+      - run:
+          name: Exercise reference recovery and governance protocol
+          command: python scripts/qualify_recovery_governance.py --output .runtime/circleci-recovery --rows 10000
+      - store_artifacts:
+          path: test-results
+          destination: test-results
+      - store_artifacts:
+          path: .runtime/circleci-reference/evidence
+          destination: reference-evidence
+      - store_artifacts:
+          path: .runtime/circleci-recovery/evidence
+          destination: recovery-evidence
+
+workflows:
+  reference-qualification:
+    jobs:
+      - reference
