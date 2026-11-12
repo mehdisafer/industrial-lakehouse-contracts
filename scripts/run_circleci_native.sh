@@ -3,8 +3,22 @@
 set -Eeuo pipefail
 umask 077
 [[ "${CIRCLECI:-}" == "true" ]]
-[[ "${CIRCLE_PROJECT_USERNAME:-}" == "mehdisafer" ]]
-[[ "${CIRCLE_PROJECT_REPONAME:-}" == "industrial-lakehouse-contracts" ]]
+# GitHub App project variables can contain CircleCI display names, not VCS names.
+# Verify the checkout origin without printing its authentication material.
+python - <<'PYORIGIN'
+import subprocess
+from urllib.parse import urlsplit
+origin=subprocess.check_output(['git','remote','get-url','origin'],text=True).strip()
+if origin.startswith('git@github.com:'):
+    path=origin[len('git@github.com:'):]
+else:
+    parsed=urlsplit(origin)
+    if parsed.scheme!='https' or parsed.hostname!='github.com':
+        raise SystemExit('Unexpected checkout origin host')
+    path=parsed.path.lstrip('/')
+if path.removesuffix('.git').rstrip('/')!='mehdisafer/industrial-lakehouse-contracts':
+    raise SystemExit('Unexpected checkout repository')
+PYORIGIN
 [[ "${ILC_ALLOW_NATIVE_DEMO:-}" == "1" && "${ILC_NATIVE_TESTS:-}" == "1" ]]
 [[ "$(git rev-parse HEAD)" == "${CIRCLE_SHA1:?Expected CircleCI revision}" ]]
 [[ ! -e .runtime/circleci-native-qualification ]]
