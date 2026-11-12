@@ -65,8 +65,8 @@ jobs:
 
   native:
     docker:
-      # This variant supplies Java as well as Python; no apt-get or paid orb.
-      - image: cimg/python:3.12-browsers
+      # Java 17 is installed from a checksum-verified official archive, not the browsers Java 11.
+      - image: cimg/python:3.12
       - image: postgres:16
         environment:
           POSTGRES_DB: ilc_demo

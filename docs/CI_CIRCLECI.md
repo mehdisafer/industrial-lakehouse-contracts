@@ -6,7 +6,7 @@ I keep the repository and reviews on GitHub; CircleCI is the independent runner 
 
 The default `reference-qualification` workflow uses one Linux/Python 3.13 Docker job and the existing Smarter Testing suite. It installs `.[test]`, compiles Python, validates contracts, executes pytest and both 10,000-record reference qualifications. The `run_testsuite_doctor` parameter stays false by default: doctor repeats tests and is not run on every commit. There is no configured lint tool or transitive lockfile; neither is claimed.
 
-The native route uses **one** Linux Docker `large` job (4 vCPU / 8 GB), `cimg/python:3.12-browsers` for Python and Java, and an isolated `postgres:16` service. Java must be 17 or 21. The actual patch versions are recorded, rather than treating mutable minor image tags as an immutable environment. Native dependencies remain pinned in `pyproject.toml`: Psycopg 3.2.13, PySpark 4.0.1, Delta Spark 4.0.1, Dagster 1.11.16.
+The native route uses **one** Linux Docker `large` job (4 vCPU / 8 GB), `cimg/python:3.12` and an isolated `postgres:16` service. A bounded bootstrap downloads the latest GA Temurin 17 Linux/x64 JDK from the official Adoptium API, checks its declared size and SHA-256 before safe extraction into a new disposable directory, and records its exact release/URL/digest. No apt-get or host Java setting is used. The actual patch versions and JDK release are recorded, rather than treating mutable minor image tags or API selection as an immutable environment. JDK signature verification is not claimed; SHA-256 matches the official API metadata. Native dependencies remain pinned in `pyproject.toml`: Psycopg 3.2.13, PySpark 4.0.1, Delta Spark 4.0.1, Dagster 1.11.16.
 
 Only these events select the native workflow:
 
@@ -15,7 +15,7 @@ Only these events select the native workflow:
 
 Ordinary feature pushes do not run native jobs. The `circleci-project-setup` branch remains the onboarding configuration source; its ordinary pushes run **no job**, avoiding duplicate reference/native work when its tree is synchronized. There is no matrix, parallel native job, SSH rerun, automatic retry, Docker Layer Caching or vendor deployment.
 
-`timeout` bounds the native command to 35 minutes (plus a 30-second kill grace). Individual stages are also bounded: installation 8 minutes, PostgreSQL readiness 60 seconds, native pytest 10 minutes and the six-scenario harness 20 minutes. The outer watchdog takes precedence. This is **not an account-level billing cap**: image provisioning, checkout and artifact upload are outside that command. The published gen1 Docker large price is 20 credits/minute, so 35 minutes corresponds to 700 command-time compute credits, plus overhead. Actual usage must be read from CircleCI. No allowance, paid refill or exact cost is fabricated.
+`timeout` bounds the native command to 35 minutes (plus a 30-second kill grace). Individual stages are also bounded: Java bootstrap 4 minutes, dependency installation 8 minutes, PostgreSQL readiness 60 seconds, native pytest 10 minutes and the six-scenario harness 20 minutes. The outer watchdog takes precedence. This is **not an account-level billing cap**: image provisioning, checkout and artifact upload are outside that command. The published gen1 Docker large price is 20 credits/minute, so 35 minutes corresponds to 700 command-time compute credits, plus overhead. Actual usage must be read from CircleCI. No allowance, paid refill or exact cost is fabricated.
 
 ## What the native job really executes
 
@@ -48,3 +48,16 @@ Before this native change, CircleCI reported reference success on feature `840ac
 - Python image variants: https://circleci.com/developer/images/image/cimg/python
 - Conditional workflows: https://circleci.com/docs/reference/configuration-reference/
 - Spark/Delta compatibility: https://docs.delta.io/releases/
+
+## First native attempt and Java correction
+
+Native commit `9395f4f747aab7bc4528be1ded7ecee5fd19ff5d` produced a failed CircleCI status on workflow `e3328a78-73fa-4173-9474-ae0985f117d1`. Its private logs have not been inspected; no failed application step or native test count is inferred.
+
+Review then established a configuration error: the official Python browsers Dockerfile installs Java 11 when Java is absent from its parent, while this Spark 4.0 qualification requires Java 17 or 21. The corrected job uses a plain Python image with an explicit Temurin 17 bootstrap. This is a source-established compatibility fix, not a claim that Java was the observed first-run root cause. One corrective native attempt is appropriate; blind retries are not.
+
+The bootstrap tests exercise synthetic metadata/archives and a stub download transport. They do not represent a real JDK installation or Spark execution. The first native job is not retroactively marked successful.
+
+Official references:
+- Python browser Dockerfile: https://github.com/CircleCI-Public/cimg-python/blob/main/3.12/browsers/Dockerfile
+- Temurin archive verification: https://adoptium.net/installation/archives/
+- Temurin CI installation: https://adoptium.net/installation/ci-scripts
