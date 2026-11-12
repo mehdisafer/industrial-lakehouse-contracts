@@ -1,70 +1,57 @@
 # Demonstration runbook
 
+## Current accepted checkpoint
+
+Native synthetic single-host functionality was reviewed and accepted at `fc1a9286c937deb09b87b97524c6835b24a1d516`; see [evidence and reservations](evidence/NATIVE_fc1a928_REVIEW.md). This is not a reason to rerun the same CI job merely to inspect files. Original raw JUnit archival and actual credit usage remain open; real OpenMetadata and Fabric/Power BI are separate gates.
+
 ## Reference: reproducible, disposable and bounded
 
-From the repository root, install `.[test]` in an isolated Python 3.12/3.13 environment. Run `python -m ilc.cli validate`, then the full pytest suite, then `python scripts/qualify_reference.py --output .runtime/new-run --rows 10000`. Use a new path for every qualification. The script starts/stops loopback services and uses only synthetic data.
+From the repository root, install `.[test]` in an isolated Python 3.12/3.13 environment. Run `python -m ilc.cli validate`, the pytest suite, and `python scripts/qualify_reference.py --output .runtime/new-run --rows 10000`. Use a new output path. The script starts/stops loopback services and uses synthetic data only.
 
-Read `evidence/qualification.json` rather than infer success from the existence of a file. Review all six acceptance cases, code/runtime identity, native/provider statuses, and the API status codes. The HTML is a frozen export of an authorized response, not a continuously updating BI service.
+Read `evidence/qualification.json`, not just file existence. Check all six cases, source/runtime identity, provider statuses and API outcomes. HTML is a frozen authorized response, not live BI. For manual reporting, generate an access policy with `scripts/create_access_policy.py`, run `ilc report-api` on loopback and keep its disposable tokens outside Git. `ilc status` is read-only and refuses an absent journal.
 
-For manual reporting, generate an access policy with `scripts/create_access_policy.py`, start `ilc report-api` on loopback, and use the printed disposable tokens. Do not store them in shell scripts committed to Git. `ilc status` is read-only and refuses an absent journal.
+## Native: isolated execution only
 
-## Native: prepared route, not an instruction to use a personal/client DB
+Use a dedicated approved sandbox, no valuable volumes, Python 3.12, Java 17 and working package/JAR resolution. Configure disposable loopback `ILC_SOURCE_DSN` and `ILC_STATE_DSN`, with an `ilc_demo`-prefixed database, and explicitly set `ILC_ALLOW_NATIVE_DEMO=1`. Install `.[native,test]` and run `python scripts/qualify_native.py --output .runtime/native-new --rows 10000`.
 
-Use a dedicated sandbox with adequate approved resources, no valuable volumes, Python 3.12, Java 17, and working package/JAR downloads. Configure disposable `ILC_SOURCE_DSN` and `ILC_STATE_DSN`, both on loopback with an `ilc_demo`-prefixed database. Set `ILC_ALLOW_NATIVE_DEMO=1` explicitly. Install `.[native,test]` and run `python scripts/qualify_native.py --output .runtime/native-new --rows 10000`.
-
-The prepared Compose route is:
+The alternative prepared Compose commands remain:
 
 ```bash
-# Set ILC_DEMO_DB_PASSWORD outside Git, using a disposable URL-safe password.
+# Set ILC_DEMO_DB_PASSWORD outside Git, with a disposable URL-safe password.
 docker compose -f infra/compose.native.yml config --quiet
 docker compose -f infra/compose.native.yml run --build --rm qualify
 ```
 
-These commands are **not executed or validated by the delivered reference evidence**. They initialize new synthetic tables only. Do not substitute an existing operational database. Native module versions and container tags remain candidates, not a full immutable lock.
+CircleCI success does not qualify these Compose commands. They initialize new synthetic tables, not existing operational data. Do not use a personal or client database as a substitute. Observed native versions are recorded, not a full immutable image/transitive lock.
 
-The native pytest is skipped unless `ILC_NATIVE_TESTS=1`. When explicitly enabled it fails if dependencies/setup are absent; it never converts an unavailable provider into a pass. The original native pytest checks nominal transformation and replay. The additional `qualify_native.py` harness requires real dependencies, seeds separate fresh synthetic schemas per scenario, and is designed to exercise all six P01 cases, the final Delta path, hard child exit after synchronous target creation and authenticated HTTP reporting. It does not replace missing dependencies with mocks. CircleCI now attempts this real path; its status and receipts must be read before claiming native qualification.
+The native pytest is skipped unless `ILC_NATIVE_TESTS=1`. Explicit enablement fails when prerequisites are missing, never silently downgrades. That test covers nominal transformation and replay. The separate native harness covers all six scenarios, final-location readback, controlled child exit after synchronous materialization and authenticated HTTP reporting. The reviewed run executed both with real dependencies.
 
 ## Retention and cleanup
 
-No clean/delete command is provided. Review ownership, exact path/volume and evidence export before manual disposal. The database and candidate directories are not discarded on an ambiguous failure. Old staged candidates may consume space; retain them until their effects are reconciled. Reference SQLite backup restoration is covered by a separate real exercise. PostgreSQL/Delta restoration, interrupted disk writes/power loss and automated retention remain unqualified.
+No blanket clean/delete command is provided. Review ownership, exact paths, volumes and exported evidence before manual disposal. Preserve candidate state after ambiguous outcomes. Old staged candidates can consume space; retain until reconciled. Reference SQLite same-path restore is tested; PostgreSQL/Delta restore, power-loss durability and automatic retention are not qualified.
 
 ## Error codes
 
-`INVALID_CONTRACT`: metadata invalid. `IDEMPOTENCY_CONFLICT`: key bound to another request. `CAPTURE_UNCERTAIN`: source read did not finalize. `SOURCE_ERROR`: source contract/budget/read failed. `INTEGRITY_ERROR`: artifact differs. `STALE_BASE`: new publication already superseded the attempt. `BUSY`: another writer. `NATIVE_UNAVAILABLE`: the requested real backend is absent. Consult the actual exception class for the precise serialized code; do not treat all errors as retryable.
+`INVALID_CONTRACT`: metadata invalid. `IDEMPOTENCY_CONFLICT`: reused key bound differently. `CAPTURE_UNCERTAIN`: source read not finalized. `SOURCE_ERROR`: source contract/budget/read failure. `INTEGRITY_ERROR`: artifact drift. `STALE_BASE`: another publication superseded the attempt. `BUSY`: active writer. `NATIVE_UNAVAILABLE`: requested real backend absent. Consult the actual exception class for serialized codes; not all errors are retryable.
 
-## Reference restoration and catalog protocol qualification
+## Reference restoration and governance protocol
 
-`python scripts/qualify_recovery_governance.py --output .runtime/recovery-new --rows 10000`
-starts only disposable reference services and a named catalog protocol emulator.
-It publishes metadata, checks replay without duplicate mutations, creates a
-consistent SQLite archive, preserves the original root, restores to its exact
-path and rereads the report over HTTP with the source stopped. A second catalog
-experiment injects a lost response through MockTransport. Neither experiment is
-an OpenMetadata deployment.
+`python scripts/qualify_recovery_governance.py --output .runtime/recovery-new --rows 10000` starts disposable reference services and a catalog protocol emulator. It publishes metadata, checks no duplicate mutation, preserves the old runtime, creates/restores a consistent SQLite snapshot and rereads the report with source HTTP stopped. A separate MockTransport experiment models response loss. Neither is live OpenMetadata.
 
-Read [backup/restore](BACKUP_RESTORE.md) and [governance](GOVERNANCE.md) for manual
-operations. The real catalog command needs both `--publish` and
-`--allow-catalog-writes`, an explicit local endpoint and a token outside Git. No
-real catalog instance has been contacted during this qualification.
+Consult [backup/restore](BACKUP_RESTORE.md) and [governance](GOVERNANCE.md). A real catalog write needs `--publish`, `--allow-catalog-writes`, a specific local endpoint and a token outside Git. No real catalog instance was contacted by the reviewed native run.
 
-## Host pytest plugin isolation
+## Pytest plugin isolation
 
-The final receipt uses `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1` because unrelated pytest
-plugins preinstalled in the authoring host stalled earlier attempts. The project
-has no required third-party pytest plugin; its conftest fixtures remain loaded.
-The early timed-out attempts are retained as attempts, not passing evidence. The
-same flag is explicit in the CircleCI reference workflow. GitHub reports a
-successful reference status on `fc1a928`; private JUnit and evidence require
-separate inspection. No numerical hosted test count is inferred from that status.
+`PYTEST_DISABLE_PLUGIN_AUTOLOAD=1` avoids unrelated host plugins; project conftest fixtures still load and no third-party pytest plugin is required. Historical interrupted local suites remain interrupted attempts, not passing evidence. Native pytest now has a reviewed one-test result. Reference CircleCI remains successful at job-status level; its own exact JUnit count has not been reviewed.
 
-## CircleCI native operation and credit control
+## CircleCI and credit controls
 
-The active configuration is described in [CI_CIRCLECI.md](CI_CIRCLECI.md). Ordinary feature pushes run only the reference job. A deliberate push to `qualify/p01-native-20261112`, or a pipeline with `run_native: true`, selects one native job. Do not make empty commits or rerun an unchanged failure before reading its diagnostic.
+See [CI_CIRCLECI.md](CI_CIRCLECI.md). Feature pushes run reference tests. A deliberate push to `qualify/p01-native-20261112`, or `run_native: true`, selects one native job. Avoid empty commits and unchanged reruns. Setup synchronizations and documentation-only changes skip duplicate execution.
 
-The first native attempt on `9395f4f` failed. The source-established Java 11 incompatibility was corrected at `fc1a928` using plain Python and a verified Temurin 17 archive. The exact failed step of the first job remains unknown without its private logs. The corrected native attempt has its own evidence boundary.
+The first native attempt `9395f4f` failed. The Java image compatibility defect was corrected at `fc1a928`; its successful run is reviewed. The exact first failed step is still not established from a complete failed-job log.
 
-Read `native-diagnostics/attempt.json` first for last phase, exit code, source SHA and duration. Then inspect `java-install.json`, `environment.json`, `native-tests.log`, `native-qualification.log` and JUnit, when those stages were reached. Final acceptance additionally requires `verified-evidence.json` and the complete `native-evidence` receipts. Missing artifacts are not success.
+For new runs, inspect `attempt.json`, Java/environment/dependency receipts, logs, JUnit and `verified-evidence.json`, then complete `native-evidence` contents. Missing files are not success. Download original XML rather than copy a browser-rendered document; the reviewed browser copy has an extension-added script and cannot reproduce the original raw hash. Never execute it or silently present a cleaned copy as original.
 
-The 35-minute watchdog bounds the command, not image provisioning or artifact upload and not the account billing total. No paid refill or plan change is configured. After an unexplained failed attempt, obtain the CircleCI failure report rather than increase resources speculatively.
+The command watchdog is 35 minutes, not an account spend cap; provisioning and artifact upload are outside it. The accepted command took 272 seconds. Actual credits remain unknown. No paid refill or plan change is configured. Inspect diagnostics before changing resources after a failure.
 
-Do not copy tokens into GitHub comments or chat. Runtime policies and source databases stay out of CI artifacts. The fixture PostgreSQL password is only for the isolated job service.
+Keep tokens, runtime policies and source databases out of Git and artifact uploads. The PostgreSQL password in CI is exclusively a disposable loopback fixture credential.
