@@ -1,0 +1,20 @@
+version: 2.1
+
+jobs:
+  starter:
+    docker:
+      - image: cimg/base:2026.11
+    steps:
+      - checkout
+      # No application, dependencies, build, tests, or lint commands exist yet.
+      # Add dependency caching and test-suites.yml when those are introduced.
+      - run:
+          name: Verify repository checkout
+          command: |
+            test -s README.md
+            echo "Starter pipeline passed. Add project checks as code is introduced."
+
+workflows:
+  starter:
+    jobs:
+      - starter
