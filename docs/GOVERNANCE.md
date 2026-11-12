@@ -95,3 +95,13 @@ server permissions, entity and column readback, lineage display, DQ result
 readback, interrupted real-server recovery and catalog retention. Unit tests,
 MockTransport and a real HTTP server running our emulator satisfy none of those
 product-specific gates.
+
+## Real product qualification route
+
+The bounded, separate CircleCI deployment and live permission/replay/conflict
+scenarios are implemented in [OPENMETADATA_LIVE.md](OPENMETADATA_LIVE.md).
+The input is a newly accepted reference-profile generation, not a repeated native
+Spark qualification. Existing emulator tests remain emulator evidence. The live
+route uses actual OpenMetadata 1.12.0 HTTP APIs, and its precise executed outcome
+is recorded in issue #4 only after observation. No default admin token is used
+for publication and no secrets are exported.
