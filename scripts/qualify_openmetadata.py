@@ -78,9 +78,17 @@ class TraceTransport(httpx.BaseTransport):
                 and url.path.startswith('/api/'), 'HTTP transport escaped the CI catalogue')
         response = self.inner.handle_request(request)
         try:
-            raw = response.read()
-            require(len(raw) <= 2_000_000, 'Catalogue response exceeds evidence budget')
-            status, headers = response.status_code, response.headers
+            # Decode once and enforce the budget while consuming the body.
+            # Re-wrapping decoded bytes with the upstream Content-Encoding
+            # would make the outer httpx client attempt a second decompression.
+            body = bytearray()
+            for chunk in response.iter_bytes():
+                body.extend(chunk)
+                require(len(body) <= 2_000_000, 'Catalogue response exceeds evidence budget')
+            raw = bytes(body)
+            status, headers = response.status_code, response.headers.copy()
+            for name in ('content-encoding', 'content-length', 'transfer-encoding'):
+                headers.pop(name, None)
         finally:
             response.close()
         event = {'method': request.method, 'path': url.path, 'status': status}
@@ -181,6 +189,15 @@ def write_count(trace):
     return sum(e['method'] in MUTATIONS for e in trace)
 
 
+def verify_basic_suite(suite: dict, table_id: str) -> None:
+    # The pinned 1.12 schema marks executable as deprecated since 1.6.2.
+    # Require the actual basic suite and its parent-table identity instead.
+    require(suite.get('basic') is True, 'Test suite is not a basic entity-linked suite')
+    parent = suite.get('basicEntityReference') or {}
+    require(parent.get('id') == table_id and parent.get('type') == 'table',
+            'Basic test suite is linked to a different table')
+
+
 def snapshot(client: APIClient, plan: dict) -> dict:
     """Independently re-read metadata, owners, tags, lineage, DQ and test-suite."""
     tables={}
@@ -205,7 +222,7 @@ def snapshot(client: APIClient, plan: dict) -> dict:
     case=client.get_name('dataQuality/testCases',fact+'.ilc_accepted_reconciliation','testDefinition,testSuite')
     require(case.get('testSuite',{}).get('id'), 'No executable suite attached to test case')
     suite=client.request('GET','v1/dataQuality/testSuites/'+case['testSuite']['id'])
-    require(suite.get('executable') is True, 'Test suite is not executable')
+    verify_basic_suite(suite, tables[fact]['id'])
     result=client.request('GET','v1/dataQuality/testCases/testCaseResults/'+quote(case['fullyQualifiedName'],safe=''),
         params={'startTs':plan['quality']['timestamp'],'endTs':plan['quality']['timestamp']})
     found=[r for r in result.get('data',[]) if r.get('timestamp')==plan['quality']['timestamp']]
@@ -337,7 +354,7 @@ def qualify(output: Path) -> dict:
             checks={
                 'G3-01':{'status':'PASS_LIVE','product':'OpenMetadata','version':API_VERSION,'authenticated':True},
                 'G3-02':{'status':'PASS_LIVE','generations':2,'tables_per_generation':len(initial['tables']),'lineage_edges_per_generation':len(initial['edges']),
-                         'quality_results_per_generation':1,'implicit_suites_read_back':2,'owners_tags_types_checked':True},
+                         'quality_results_per_generation':1,'basic_suites_read_back':2,'owners_tags_types_checked':True},
                 'G3-03':{'status':'PASS_LIVE','replay_mutations':0},
                 'G3-04':{'status':'PASS_LIVE','database_put_count':puts,'server_object_preserved':True,
                          'injection':'CLIENT_TRANSPORT_DROPS_RESPONSE_AFTER_REAL_SERVER_SUCCESS'},
