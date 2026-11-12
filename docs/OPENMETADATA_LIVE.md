@@ -51,7 +51,7 @@ qualification; this deployment is not a production security template.
 | Gate | Required live observation |
 |---|---|
 | G3-01 | Actual 1.12.0 product, authenticated bootstrap, recorded image digests |
-| G3-02 | Two accepted generations: 15 table definitions, 11 lineage relations and one DQ result per generation; column types, owners, tags and implicit executable test suites reread |
+| G3-02 | Two accepted generations: 15 table definitions, 11 lineage relations and one DQ result per generation; column types, owners, tags and implicit basic test suites reread |
 | G3-03 | Repeating a verified publication performs no additional write |
 | G3-04 | Client transport deliberately loses one response after a real successful database write; a new publisher instance reconciles its durable intent and the same server UUID; exactly one database PUT |
 | G3-05 | Unauthenticated read 401, reader table modification 403, writer policy creation 403; the forbidden policy is absent and accepted metadata unchanged |
@@ -124,3 +124,18 @@ stay queued; `main`, repository visibility and licensing are unchanged.
 - CircleCI Linux VM: https://circleci.com/docs/guides/execution-managed/using-linuxvm/
 - Plan availability: https://circleci.com/pricing/
 - Credit rates: https://circleci.com/pricing/price-list/
+
+## Transport and test-suite compatibility correction
+
+An offline compressed-response reproduction exposed a double-decompression bug
+in the new tracing transport. It now decodes once under a byte budget and removes
+upstream encoding/length headers before returning the decoded HTTP response.
+Two tests cover gzip decoding and the decompressed response limit.
+
+The pinned OpenMetadata 1.12.0 test-suite schema deprecates `executable` in favour
+of `basic` and `basicEntityReference`. The readback now requires `basic=true` and
+the exact parent table UUID/type; it does not accept an absent or foreign suite.
+Five additional offline cases cover that binding. These are verified source and
+unit-test corrections, not a diagnosis inferred from an unread cloud log.
+
+- Pinned suite schema: https://github.com/open-metadata/OpenMetadata/blob/caa14bfd42af6ec84464aa81815addd3e0cd2902/openmetadata-spec/src/main/resources/json/schema/tests/testSuite.json

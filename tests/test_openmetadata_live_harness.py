@@ -1,5 +1,6 @@
 """Offline checks of live harness safeguards; not a real OpenMetadata run."""
 import copy
+import gzip
 import importlib.util
 import io
 from pathlib import Path
@@ -132,3 +133,41 @@ def test_log_budget_consumes_input_without_broken_pipe(monkeypatch):
     monkeypatch.setattr(redactor.sys,'stdin',stream);monkeypatch.setattr(redactor.sys,'stdout',out)
     redactor.main()
     assert stream.read()=='' and '[DIAGNOSTIC OUTPUT TRUNCATED]' in out.getvalue()
+
+
+def test_compressed_product_response_is_decoded_exactly_once():
+    trace=[]
+    def upstream(request):
+        data=gzip.compress(b'{"id":"synthetic-catalogue-object"}')
+        return httpx.Response(200,headers={'content-encoding':'gzip','content-length':str(len(data))},
+                              stream=httpx.ByteStream(data))
+    transport=live.TraceTransport(trace,inner=httpx.MockTransport(upstream))
+    with httpx.Client(transport=transport) as client:
+        result=client.get(live.API+'/v1/tables/name/synthetic')
+        assert result.json()=={'id':'synthetic-catalogue-object'}
+        assert 'content-encoding' not in result.headers
+        assert int(result.headers['content-length'])==len(result.content)
+    assert trace==[{'method':'GET','path':'/api/v1/tables/name/synthetic','status':200}]
+
+
+def test_oversized_decoded_response_is_rejected_before_export():
+    data=gzip.compress(b'x'*2_000_001)
+    transport=live.TraceTransport([],inner=httpx.MockTransport(lambda request:
+        httpx.Response(200,headers={'content-encoding':'gzip'},stream=httpx.ByteStream(data))))
+    with httpx.Client(transport=transport) as client:
+        with pytest.raises(ValueError,match='budget'):
+            client.get(live.API+'/v1/tables/name/synthetic')
+
+
+def test_basic_suite_is_bound_to_exact_table():
+    live.verify_basic_suite({'basic':True,'basicEntityReference':{'id':'table-1','type':'table'}},'table-1')
+
+
+@pytest.mark.parametrize('suite',[
+    {'executable':True},
+    {'basic':False,'basicEntityReference':{'id':'table-1','type':'table'}},
+    {'basic':True,'basicEntityReference':{'id':'other','type':'table'}},
+    {'basic':True,'basicEntityReference':{'id':'table-1','type':'database'}},
+])
+def test_deprecated_or_wrongly_bound_suite_is_rejected(suite):
+    with pytest.raises(ValueError):live.verify_basic_suite(suite,'table-1')
