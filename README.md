@@ -8,20 +8,22 @@ I am building an original portfolio project for a fictional three-site manufactu
 
 | Surface | Current state |
 |---|---|
-| Reference: SQLite, loopback HTTP, CSV, SQL, authenticated reporting | Executed; local evidence and separate hosted reference success |
-| PostgreSQL / PySpark / Delta / Dagster | **Bounded native functional qualification accepted at `fc1a928`**, after review of supplied CircleCI evidence; original XML hash and credit usage reservations remain |
+| Reference: SQLite, loopback HTTP, CSV, SQL, authenticated reporting | Executed; local evidence and hosted reference success |
+| PostgreSQL / PySpark / Delta / Dagster | **Bounded native functional qualification accepted at `fc1a928`**, after review of supplied evidence; original XML hash and credit reservations remain |
 | Abrupt exit after target write / before checkpoint | Native recovery with HTTP source offline, Bronze/target reused and one publication |
 | Bad data and schema drift | Native publication blocked; previous report retained |
 | Metadata-only extra entity | Executed on reference profile with unchanged pipeline source hash |
-| OpenMetadata | Publisher and protocol-emulator tests implemented; **real product NOT RUN** |
+| Real OpenMetadata 1.12.0 | **Catalogue job SUCCESS at `cd09de0`; private artifact review pending.** A separate live-product route, not the protocol emulator |
 | Fabric / Power BI | Read-only preflight only; **no tenant integration or BI report** |
 | Reference backup/restore | Same-path SQLite restoration tested; **not PostgreSQL/Delta DR** |
-| Docker Compose build / Windows runtime | Not qualified by the CircleCI Linux route |
+| Native Compose alternative / Windows runtime | Not qualified by the CircleCI Linux route |
 | Distributed scale / HA / production readiness | **NOT CLAIMED** |
 
 The [native evidence review](docs/evidence/NATIVE_fc1a928_REVIEW.md) records 1 executed native pytest, 234 deselected tests, six separate application scenarios, 14 matching reconstructed JSON hashes and 20 matching runtime source files. It distinguishes copied evidence from raw downloads and preserves the browser-modified XML limitation. Historical reference results are not transferred into native counts.
 
-The reference profile uses immutable JSON datasets, **not Delta tables**. It remains a useful independent profile; native qualification uses real PostgreSQL/Spark/Delta/Dagster. P01 is not complete: real governance and provider gates remain open. P05 and P03 have not started.
+The [OpenMetadata route](docs/OPENMETADATA_LIVE.md) has a successful real-server job and a separate successful reference job on `cd09de03d658cb66d5aaa29a8ec677fd17a3f977`. Its final acceptance still requires inspection of actual image identities, role denials, metadata readbacks and artifact hashes. The catalogue consumes a **new accepted reference_sqlite generation**, not the earlier native run's dataset. This is deliberately separate integration evidence, not an asserted combined native-to-catalogue run.
+
+The reference profile uses immutable JSON datasets, **not Delta tables**. Native qualification uses real PostgreSQL/Spark/Delta/Dagster. P01 is not complete: catalogue evidence review and provider gates remain open. P05 and P03 have not started.
 
 ## What the demonstration does
 
@@ -85,7 +87,7 @@ The accepted CircleCI run used Python 3.12.16, Temurin 17.0.21+9, PostgreSQL `se
 
 The job installs a size/SHA-256-checked official Temurin 17 archive. Its exact release is recorded, but latest-GA selection and minor image tags are not an immutable toolchain lock; JDK signature verification is not claimed. The earlier native attempt failed; the later success does not establish the precise unread first failure cause.
 
-Only a dedicated disposable loopback database prefixed `ilc_demo` is allowed, with `ILC_ALLOW_NATIVE_DEMO=1`. Existing source tables are refused, not truncated. CircleCI native execution requires the scoped qualification branch or `run_native: true`; a 35-minute command watchdog and stage limits bound work. No new run is needed to review the existing receipts. Compose and GitHub Actions remain prepared alternative routes, not separately qualified routes. See [the runbook](docs/RUNBOOK.md).
+Only a dedicated disposable loopback database prefixed `ilc_demo` is allowed, with `ILC_ALLOW_NATIVE_DEMO=1`. Existing source tables are refused, not truncated. CircleCI native execution requires the scoped qualification branch or `run_native: true`; a 35-minute command watchdog and stage limits bound work. No new run is needed to review the existing receipts. Native Compose and GitHub Actions remain prepared alternative routes, not separately qualified routes. See [the runbook](docs/RUNBOOK.md).
 
 ## Scope limitations
 
@@ -97,7 +99,11 @@ Filesystem/database owners are outside the report API security boundary. Hashes 
 
 ## Governance and reference restoration
 
-The OpenMetadata publisher exports owners, classification, 15 base tables, 11 lineage edges and one accepted DQ result. Its durable outbox records intent before mutation, reads back outcomes, reuses an exact remote object after response loss and refuses unresolved/conflicting outcomes. Tests use a **protocol emulator**, not a live OpenMetadata product. See [governance](docs/GOVERNANCE.md).
+The OpenMetadata publisher exports owners, classification, 15 base tables, 11 lineage edges and one accepted DQ result. Its durable outbox records intent before mutation, reads back outcomes, reuses an exact remote object after response loss and refuses unresolved/conflicting outcomes. Existing unit and protocol-emulator tests remain separately identified.
+
+The added live route provisions an isolated OpenMetadata 1.12.0 server, PostgreSQL metadata store and Elasticsearch, with generated job-local credentials. Its writer and reader are not administrators. The mandatory harness checks two generations, readbacks, mutation-free replay, a deliberately lost write response, native HTTP authorization denials and preservation of a conflicting object. These are **configured success conditions**; their private receipts have not yet been independently inspected despite the successful job status. See [governance](docs/GOVERNANCE.md) and [the live qualification](docs/OPENMETADATA_LIVE.md).
+
+One dedicated catalogue job is limited to a 25-minute command, with no automatic rerun or Spark repetition. Image setup and artifact upload remain outside that watchdog. Actual credits are not inferred from elapsed time. This dedicated-server resource-role test is not TLS, SSO, multi-tenant isolation, high availability or SDK/Airflow connector qualification. The generated HTML is an API-derived snapshot, not the product UI.
 
 Reference backup holds writer locks and uses SQLite's backup API, preserving the outbox but excluding bearer policies. Restore refuses an existing root or changed path identity. The demonstration preserves the old runtime, restores, rereads the HTTP report and replays offline. See [backup/restore](docs/BACKUP_RESTORE.md).
 
@@ -105,12 +111,14 @@ Reference backup holds writer locks and uses SQLite's backup API, preserving the
 python scripts/check_environment.py --output artifacts/environment.json --check-public-dns
 ```
 
-Exit 2 means missing native prerequisites, not a successful native test. Older environment receipts describe the restricted authoring environment; they do not negate the later CircleCI native execution. No personal computer or client system is used as a fallback.
+Exit 2 means missing native prerequisites, not a successful native test. Older environment receipts describe the restricted authoring environment; they do not negate the later CircleCI executions. No personal computer or client system is used as a fallback.
 
 ## Publication and evidence status
 
-The repository remains private under Draft PR #1; `main` is not merged. Native functional G2 is accepted for **`fc1a9286c937deb09b87b97524c6835b24a1d516` only**, with original-XML archival and actual-credit reservations tracked in #3. Later documentation commits do not claim a new runtime execution. Reference CI success remains distinct from a full review of reference JUnit.
+The repository remains private under Draft PR #1; `main` is not merged. Native functional G2 is accepted for **`fc1a9286c937deb09b87b97524c6835b24a1d516` only**, with original-XML archival and actual-credit reservations in #3. The separate catalogue/reference success at **`cd09de03d658cb66d5aaa29a8ec677fd17a3f977`** is tracked in #4, pending artifact review. No successful status is silently transferred to another source revision. Documentation-only descendants use `[skip ci]` and are not new runtime qualifications.
 
-OpenMetadata (#4), Fabric/Power BI (#5), license, public visibility and final disclosure review remain open. No redistribution license is invented. P05/P03 remain queued.
+Two catalogue attempts were deliberately triggered: initial failure at `a99c173`, then success after source-established gzip/basic-suite corrections at `cd09de0`. The first failed step remains unread; the corrections are not presented as its proven diagnosis. Local targeted checks passed 65 cases (33 new harness and 32 publisher cases), not 65 live-product tests. The historical 219-pass/one-skip local run used a partial source materialization and is not the full current GitHub test suite. Exact hosted reference counts remain unreviewed.
 
-**Résumé français.** Le parcours natif PostgreSQL/PySpark/Delta/Dagster est désormais accepté sur un périmètre synthétique mono-hôte : contrats, qualité, réconciliation, reporting autorisé et reprise contrôlée. Les 14 reçus JSON concordent avec leurs empreintes. Le XML brut et les crédits restent des réserves documentaires ; OpenMetadata réel, Fabric/Power BI et la qualification de charge ne sont pas validés.
+Catalogue final acceptance (#4), Fabric/Power BI (#5), license, public visibility and final disclosure review remain open. No redistribution license is invented. P05/P03 remain queued.
+
+**Résumé français.** Le parcours natif PostgreSQL/PySpark/Delta/Dagster est accepté sur un périmètre synthétique mono-hôte. Le nouveau job OpenMetadata réel et la référence ont réussi sur `cd09de0`, mais les artefacts catalogue restent à examiner avant acceptation finale. Les données d'entrée du catalogue proviennent d'une nouvelle génération de référence ; aucune exécution Spark supplémentaire ni intégration native-catalogue combinée n'est revendiquée. Fabric/Power BI et la qualification de charge restent ouverts.

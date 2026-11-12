@@ -6,13 +6,19 @@ The reviewed CircleCI run at `fc1a9286c937deb09b87b97524c6835b24a1d516` executed
 
 G2 acceptance is limited to synthetic single-host functionality: replay, controlled post-target interruption, offline HTTP recovery with PostgreSQL available, quality rejection, reconciliation and application-scoped reporting. The original browser-rendered XML does not establish its raw file hash; actual credit usage is also unreported. Those reservations remain tracked in #3 without requiring another native run.
 
-Still separate: database-native reader-role enforcement, distributed scale, in-flight Spark fencing, PostgreSQL/Delta disaster recovery, HA, alternate Docker Compose/Windows routes and production operation. Successful reference or native functional CI does not establish these.
+Still separate: database-native reader-role enforcement, distributed scale, in-flight Spark fencing, PostgreSQL/Delta disaster recovery, HA, alternate native Docker Compose/Windows routes and production operation. Successful reference or native functional CI does not establish these.
 
-## OpenMetadata — next P01 engineering gate (#4)
+## OpenMetadata — real-server CI succeeded, artifact review pending (#4)
 
-Ownership, classification, local lineage and DQ output exist in `target/catalog/`; reporting correctly labels them `LOCAL_FILE_CATALOG_NOT_OPENMETADATA`. The publisher targets pinned OpenMetadata 1.12.0 contracts with authenticated calls and a durable outbox. Unit and real loopback HTTP tests use an explicitly named protocol emulator, not the product. See [governance](GOVERNANCE.md).
+The live catalogue and reference jobs both report success on `cd09de03d658cb66d5aaa29a8ec677fd17a3f977`. The catalogue route provisions actual OpenMetadata 1.12.0, PostgreSQL and Elasticsearch in an isolated CircleCI VM. Its mandatory harness uses authenticated non-admin publication and independent reader readback; emulator tests are not substituted for that command. See [governance](GOVERNANCE.md) and [the live runbook](OPENMETADATA_LIVE.md).
 
-Required next: an actual isolated server, dedicated service/teams/classification, positive and negative server-role checks, actual schema/lineage/DQ publication and UI/API readback, plus interrupted-delivery reconciliation. Only synthetic metadata is eligible. The native engine acceptance does not close this product gate and this evidence-review update starts no deployment.
+The input is a newly accepted **reference_sqlite** generation. The earlier native G2 run remains accepted and is not rerun. A combined native-to-catalogue execution is not claimed. Local `target/catalog/` output remains accurately labelled `LOCAL_FILE_CATALOG_NOT_OPENMETADATA`; real remote publication is a separate operation and receipt.
+
+Configured success requires two generations, fifteen table definitions and eleven lineage edges per generation, owners/classification/types/DQ and basic-suite readback, mutation-free replay, client-injected response loss after a real write, actual 401/403 refusals and conflicting-object preservation. Private runtime/image/role/readback/trace artifacts must still be inspected and reconciled before accepting G3a. A green status is not an independently verified artifact inventory.
+
+Two catalogue attempts were triggered, not an uncontrolled retry loop: `a99c173` failed, `cd09de0` succeeded after two source-established transport/suite compatibility fixes. The first failed-step log remains unread. Actual credits and cleanup outcomes are not inferred from success. No additional run is required to inspect the existing artifacts.
+
+This is dedicated-server resource-type RBAC, not multi-tenant namespace isolation. TLS/SSO, catalogue HA/restore/retention, SDK/Airflow connector ingestion and actual UI inspection are separate. The generated HTML is an API-derived snapshot, not an OpenMetadata UI screenshot.
 
 ## Fabric / Power BI — separate provider gate (#5)
 
@@ -24,4 +30,4 @@ An evaluation offer does not establish account authorization, Terraform capacity
 
 ## Portfolio sequence
 
-P01 remains the sole active project. Native functional G2 is now evidence-backed; real OpenMetadata and Fabric/Power BI are not silently dropped from scope. P05 and P03 remain planned in that order. Moving on requires an explicit portfolio checkpoint, not relabeling an incomplete provider integration as complete.
+P01 remains the sole active project. Native functional G2 is evidence-backed; the real catalogue has a successful CI route awaiting artifact review. Fabric/Power BI is not silently dropped from scope. P05 and P03 remain planned in that order. Moving on requires an explicit portfolio checkpoint, not relabeling an incomplete provider integration as complete.
