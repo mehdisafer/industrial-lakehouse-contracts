@@ -12,11 +12,12 @@ An original public-portfolio candidate for a fictional three-site manufacturer. 
 | Abrupt process exit after target write / before checkpoint | Recovered with the source HTTP server stopped |
 | Bad data and schema drift | Publication blocked; previous accepted report retained |
 | Metadata-only extra entity | Executed, with unchanged pipeline source hash |
-| PostgreSQL + Spark + Delta + Dagster | Adapter and qualification harness implemented; **NOT EXECUTED** |
+| PostgreSQL + Spark + Delta + Dagster | Real native CircleCI route started; **NO ACCEPTED NATIVE QUALIFICATION YET**. See PR #1 and issue #3 for exact attempts. |
 | OpenMetadata | Metadata publisher implemented against pinned 1.12.0 APIs; unit and loopback **protocol-emulator tests executed**, real product **NOT RUN** |
 | Fabric / Power BI | Read-only inventory preflight and acceptance plan only; **no tenant integration or BI report built** |
 | Reference backup/restore | SQLite snapshot, same-path restore, report readback and offline accepted replay tested; **not PostgreSQL/Delta DR** |
-| Hosted CI, Docker image, Windows reference runtime | Workflows/configuration prepared; **NOT EXECUTED** |
+| Hosted Linux reference CI | CircleCI reported success on `fc1a928`; private JUnit/receipts have not been independently inspected. This is not native qualification. |
+| Docker build and Windows runtime | Not qualified by the Linux reference job |
 | Distributed scale, HA, production readiness | **NOT CLAIMED** |
 
 The reference profile is an explicit capability fallback for this development environment, not a replacement for the agreed native lakehouse. It uses JSON immutable datasets, **not Delta tables**. P01 remains open until its native and provider gates are completed. The subsequent agentic and streaming/ML projects have not started.
@@ -73,15 +74,15 @@ The fixture timestamp is fixed for repeatability. A report created later is corr
 
 `profiles/reference.json` and `profiles/native.json` describe execution, not business meaning. Operations are selected from reviewed code, never arbitrary SQL or Python stored in metadata. The original `ilc-contract/1` format is **not claimed ODCS-compliant**.
 
-See [contracts](docs/CONTRACTS.md), [architecture](docs/ARCHITECTURE.md), [recovery](docs/RECOVERY.md), [security](docs/SECURITY.md), [qualification](docs/QUALIFICATION.md), and [remaining gates](docs/PROVIDER_GATES.md).
+See [CircleCI execution and budgets](docs/CI_CIRCLECI.md), [contracts](docs/CONTRACTS.md), [architecture](docs/ARCHITECTURE.md), [recovery](docs/RECOVERY.md), [security](docs/SECURITY.md), [qualification](docs/QUALIFICATION.md), and [remaining gates](docs/PROVIDER_GATES.md).
 
-## Optional native qualification — explicit, unverified profile
+## Native qualification — bounded cloud route, acceptance still open
 
 The native adapter is implemented using psycopg source reads/state transactions, Spark SQL, Delta version-pinned writes/reads and a Dagster job. Publication now requires a second reconciliation at the **final target path after rename**, not just at its former staging location. Reporting and accepted retries require the bound final-readback proof. Native decimal normalization preserves the contracted scale. These engine paths have not run in this container; injected verifier tests are not native execution. No missing dependency causes a silent downgrade.
 
-Candidate direct versions: PostgreSQL 16, Java 17, PySpark 4.0.1, Delta Spark 4.0.1, Dagster 1.11.16, psycopg 3.2.13. This combination has **not been installed or exercised here**. Package/JAR resolution and compatibility remain qualification gates.
+Candidate direct versions: PostgreSQL 16, Java 17, PySpark 4.0.1, Delta Spark 4.0.1, Dagster 1.11.16, psycopg 3.2.13. The CircleCI job provisions these in a disposable environment and records resolved versions; the authoring container has not executed this stack. Only accepted runtime receipts can qualify the combination. The first cloud attempt failed; reviewing the selected browsers image exposed a Java 11 incompatibility. The corrected job uses a checksum-verified Temurin 17 bootstrap. This is not a confirmed diagnosis of the private failed-step log.
 
-Use only a dedicated disposable database whose name begins with `ilc_demo`, on loopback. Initialization requires `ILC_ALLOW_NATIVE_DEMO=1`. Existing source tables are refused, not truncated. `infra/compose.native.yml` and `.github/workflows/native.yml` are prepared qualification routes, not proof that they work. Consult [the runbook](docs/RUNBOOK.md) before running them.
+Use only a dedicated disposable database whose name begins with `ilc_demo`, on loopback. Initialization requires `ILC_ALLOW_NATIVE_DEMO=1`. Existing source tables are refused, not truncated. CircleCI is the active runner, with an exact native branch or explicit `run_native` parameter and a 35-minute command watchdog. Setup-branch synchronization does not duplicate builds. `infra/compose.native.yml` and `.github/workflows/native.yml` remain alternative prepared routes, not proof that they work. Consult [the runbook](docs/RUNBOOK.md) before running them.
 
 ## Scope limitations
 
@@ -113,10 +114,10 @@ python scripts/check_environment.py --output artifacts/environment.json --check-
 Exit 2 is an explicit missing-native-dependencies gate, not a failed business
 pipeline or a passing native test. The supplied environment receipt records
 missing psycopg/PySpark/Delta/Dagster, absent PostgreSQL/Docker binaries and public
-package/JAR DNS failures. No cloud or personal computer was accessed as a fallback.
+package/JAR DNS failures. That receipt describes the original authoring environment. The project now runs reference CI in CircleCI; it still uses no personal computer or client system as a fallback.
 
 ## Publication status
 
-This source is a delivery candidate, not a claim that a repository or release exists. A public target, license choice, final disclosure review and a live CI run remain to be approved/performed. The package intentionally contains no invented open-source license grant. Until the owner chooses one, do not infer redistribution terms from the presence of source code.
+The source is published in the private `mehdisafer/industrial-lakehouse-contracts` repository, under Draft PR #1. `main` is not merged. Reference CircleCI status is successful; native/provider acceptance, public visibility, license and final disclosure review remain open. The exact code qualification candidate is `fc1a9286c937deb09b87b97524c6835b24a1d516`; subsequent documentation-only updates do not claim a new runtime test. The package intentionally contains no invented open-source license grant. Until the owner chooses one, do not infer redistribution terms from the presence of source code.
 
 **Résumé français.** P01 démontre actuellement un parcours de référence exécutable : contrats, trois sources réelles locales, contrôles métier, reporting autorisé et reprise après arrêt brutal. La restauration SQLite et les tests de protocole gouvernance complètent ces preuves. Il ne faut pas le présenter comme une plateforme Spark/Fabric/OpenMetadata qualifiée. Ces intégrations restent les prochaines étapes du même projet, avant le lancement de P05 puis P03.
