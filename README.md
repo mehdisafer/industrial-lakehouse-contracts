@@ -2,39 +2,42 @@
 
 **Contract-driven data ingestion with explicit reporting acceptance and recoverable publication.**
 
-An original public-portfolio candidate for a fictional three-site manufacturer. It connects a database, a paginated HTTP source and CSV files, validates five business entities, reconciles exact monetary totals, and exposes only the last accepted reporting generation.
+I am building an original portfolio project for a fictional three-site manufacturer. It connects a database, a paginated HTTP source and CSV files, validates five business entities, reconciles exact monetary totals, and exposes only the last accepted reporting generation.
 
 ## Current evidence, not a marketing badge
 
 | Surface | Current state |
 |---|---|
-| Reference profile: SQLite + real loopback HTTP + CSV + SQL + authenticated reporting | Executed in a disposable Linux/Python 3.13 environment |
-| Abrupt process exit after target write / before checkpoint | Recovered with the source HTTP server stopped |
-| Bad data and schema drift | Publication blocked; previous accepted report retained |
-| Metadata-only extra entity | Executed, with unchanged pipeline source hash |
-| PostgreSQL + Spark + Delta + Dagster | Real native CircleCI route started; **NO ACCEPTED NATIVE QUALIFICATION YET**. See PR #1 and issue #3 for exact attempts. |
-| OpenMetadata | Metadata publisher implemented against pinned 1.12.0 APIs; unit and loopback **protocol-emulator tests executed**, real product **NOT RUN** |
-| Fabric / Power BI | Read-only inventory preflight and acceptance plan only; **no tenant integration or BI report built** |
-| Reference backup/restore | SQLite snapshot, same-path restore, report readback and offline accepted replay tested; **not PostgreSQL/Delta DR** |
-| Hosted Linux reference CI | CircleCI reported success on `fc1a928`; private JUnit/receipts have not been independently inspected. This is not native qualification. |
-| Docker build and Windows runtime | Not qualified by the Linux reference job |
-| Distributed scale, HA, production readiness | **NOT CLAIMED** |
+| Reference: SQLite, loopback HTTP, CSV, SQL, authenticated reporting | Executed; local evidence and separate hosted reference success |
+| PostgreSQL / PySpark / Delta / Dagster | **Bounded native functional qualification accepted at `fc1a928`**, after review of supplied CircleCI evidence; original XML hash and credit usage reservations remain |
+| Abrupt exit after target write / before checkpoint | Native recovery with HTTP source offline, Bronze/target reused and one publication |
+| Bad data and schema drift | Native publication blocked; previous report retained |
+| Metadata-only extra entity | Executed on reference profile with unchanged pipeline source hash |
+| OpenMetadata | Publisher and protocol-emulator tests implemented; **real product NOT RUN** |
+| Fabric / Power BI | Read-only preflight only; **no tenant integration or BI report** |
+| Reference backup/restore | Same-path SQLite restoration tested; **not PostgreSQL/Delta DR** |
+| Docker Compose build / Windows runtime | Not qualified by the CircleCI Linux route |
+| Distributed scale / HA / production readiness | **NOT CLAIMED** |
 
-The reference profile is an explicit capability fallback for this development environment, not a replacement for the agreed native lakehouse. It uses JSON immutable datasets, **not Delta tables**. P01 remains open until its native and provider gates are completed. The subsequent agentic and streaming/ML projects have not started.
+The [native evidence review](docs/evidence/NATIVE_fc1a928_REVIEW.md) records 1 executed native pytest, 234 deselected tests, six separate application scenarios, 14 matching reconstructed JSON hashes and 20 matching runtime source files. It distinguishes copied evidence from raw downloads and preserves the browser-modified XML limitation. Historical reference results are not transferred into native counts.
+
+The reference profile uses immutable JSON datasets, **not Delta tables**. It remains a useful independent profile; native qualification uses real PostgreSQL/Spark/Delta/Dagster. P01 is not complete: real governance and provider gates remain open. P05 and P03 have not started.
 
 ## What the demonstration does
 
-1. Read customers, orders and order lines in one SQLite read transaction; products from CSV; shipments through real, bounded HTTP pagination.
+1. Read customers, orders and order lines transactionally from the selected database; products from CSV; shipments through bounded HTTP pagination.
 2. Bind an immutable run plan to contract/profile/code/runtime hashes, an upper timestamp and the previously accepted generation.
-3. Preserve original inputs in Bronze. Type and reconcile Silver, rejecting both members of a duplicate key and conflicting same-timestamp updates.
-4. Materialize customer/product/site snapshot dimensions and run a reviewed SQL fact model for order fulfillment. Reconcile line counts, keys and exact Decimal/cents totals independently.
-5. Write a candidate dataset without exposing it to reporting. Atomically accept its pointer and watermarks in the state database only after verification.
-6. Serve site-scoped reports through FastAPI. Readers cannot see another site's records, totals, catalog or global evidence.
-7. Demonstrate rejection, interruption and recovery, with data version and freshness visible to consumers.
+3. Preserve Bronze inputs, type and reconcile Silver, and reject duplicate-key members or conflicting same-timestamp updates.
+4. Materialize customer/product/site snapshot dimensions and a reviewed order-fulfillment fact model; independently reconcile line counts, keys and exact Decimal totals.
+5. Write a candidate without exposing it to reporting; accept its pointer and watermarks transactionally after verification. Native execution also rereads Delta at the final path.
+6. Serve site-scoped FastAPI reports. Other-site records/totals and unauthorized catalog/evidence views are refused.
+7. Demonstrate rejection, interruption, recovery and honest reporting of version, freshness and degradation.
+
+The native synthetic run captured 10,000 records, produced 3,980 facts and reconciled 8,857,766.18 EUR initially. Fixture revision 1 adds 20.00 EUR on SITE_A; recovered generation 2 reports 8,857,786.18 EUR without adding facts or orders. These are correctness observations, not business performance or scale claims.
 
 ## Run the reference slice
 
-Python 3.12 or 3.13 is the declared target; the local qualification exercised **3.13.5**. Use a new virtual environment and a working dependency index:
+Python 3.12 or 3.13 is the declared target; the historical local reference qualification used 3.13.5. Use a new virtual environment:
 
 ```bash
 python -m venv .venv
@@ -47,11 +50,11 @@ python scripts/qualify_reference.py --output .runtime/qualification-001 --rows 1
 python scripts/qualify_recovery_governance.py --output .runtime/recovery-001 --rows 10000
 ```
 
-The qualification requires a **new output directory**. It does not delete or overwrite previous runs. Its `evidence/` directory contains receipts, API observations, a recovery timeline, local catalog/lineage and HTML exports from actual authorized API responses. Its `work/` directory contains synthetic source databases and runtime state; do not publish that directory automatically.
+Use a **new output directory**. The scripts do not overwrite previous runs. `evidence/` contains receipts, API observations, recovery chronology, local catalog/lineage and HTML exports from authorized responses. `work/` contains source databases and runtime state: do not publish it automatically.
 
-No external data, model, production credential or cloud endpoint is used in this reference path. Source and reporting HTTP services bind to loopback and are stopped before the script exits. The script uses an intentionally abrupt child-process exit, explicitly opted in for the synthetic fixture.
+The reference route uses synthetic data and loopback HTTP services, stopped before script exit. Its deliberate abrupt child-process exit is an explicitly opted-in fixture, not a production fault injector.
 
-### Interactive use
+### Interactive reference use
 
 ```bash
 ilc fixture --output .runtime/source --rows 10000
@@ -64,60 +67,50 @@ python scripts/create_access_policy.py --output .runtime/access-policy.json
 ilc report-api --root .runtime/pipeline --access-policy .runtime/access-policy.json --port 8766
 ```
 
-The access-policy helper prints two random demonstration tokens once. Keep them outside Git and use them on the local report page or as `Authorization: Bearer ...` headers. `GET /api/report`, `/dashboard` and `/api/orders/{id}` enforce site scope. Catalog/evidence permissions require the full site scope. The `status` and report CLI open the journal read-only; they do not initialize an absent runtime.
+The policy helper prints two random demonstration tokens once. Keep them outside Git. Use them on the report page or in `Authorization: Bearer ...` headers. `/api/report`, `/dashboard` and `/api/orders/{id}` enforce site scope; catalog/evidence require the full site scope. Read-only status/report commands refuse an absent runtime instead of initializing it.
 
-The fixture timestamp is fixed for repeatability. A report created later is correctly marked stale; successful loading is not proof of freshness. The source generator accepts an explicit anchor for a new dataset.
+Fixture time is fixed for repeatability. A successfully loaded report can correctly be `STALE`; failed subsequent loads expose `DEGRADED` while preserving accepted totals. Successful loading is not proof of freshness. A new fixture may use an explicit anchor.
 
 ## Contracts and business model
 
-`contracts/sales.json` describes five entities: customers, products, orders, order_lines and shipments. Three sites and EUR-only amounts are deliberate. On-time quantity counts units delivered by the promised timestamp; it is **not** an order-level OTIF measure.
+`contracts/sales.json` covers customers, products, orders, order_lines and shipments across three sites, with EUR-only amounts. On-time quantity counts units delivered by the promised timestamp; it is **not** order-level OTIF. No currency conversion is performed.
 
-`profiles/reference.json` and `profiles/native.json` describe execution, not business meaning. Operations are selected from reviewed code, never arbitrary SQL or Python stored in metadata. The original `ilc-contract/1` format is **not claimed ODCS-compliant**.
+`profiles/reference.json` and `profiles/native.json` describe execution rather than business meaning. Metadata selects reviewed operations, not arbitrary SQL or Python. The original `ilc-contract/1` format is **not claimed ODCS-compliant**.
 
-See [CircleCI execution and budgets](docs/CI_CIRCLECI.md), [contracts](docs/CONTRACTS.md), [architecture](docs/ARCHITECTURE.md), [recovery](docs/RECOVERY.md), [security](docs/SECURITY.md), [qualification](docs/QUALIFICATION.md), and [remaining gates](docs/PROVIDER_GATES.md).
+See [contracts](docs/CONTRACTS.md), [architecture](docs/ARCHITECTURE.md), [recovery](docs/RECOVERY.md), [security](docs/SECURITY.md), [qualification](docs/QUALIFICATION.md), [CircleCI](docs/CI_CIRCLECI.md) and [remaining gates](docs/PROVIDER_GATES.md).
 
-## Native qualification — bounded cloud route, acceptance still open
+## Native route and reviewed environment
 
-The native adapter is implemented using psycopg source reads/state transactions, Spark SQL, Delta version-pinned writes/reads and a Dagster job. Publication now requires a second reconciliation at the **final target path after rename**, not just at its former staging location. Reporting and accepted retries require the bound final-readback proof. Native decimal normalization preserves the contracted scale. These engine paths have not run in this container; injected verifier tests are not native execution. No missing dependency causes a silent downgrade.
+The accepted CircleCI run used Python 3.12.16, Temurin 17.0.21+9, PostgreSQL `server_version=160015`, PySpark/Delta Spark 4.0.1, Dagster 1.11.16 and Psycopg 3.2.13. Dagster ran `accepted_sales_job` in process. Ten Delta tables per accepted batch were reconciled at their final location at version 0. Native reporting/retries require the bound final-readback proof, and decimal normalization preserves the contracted scale.
 
-Candidate direct versions: PostgreSQL 16, Java 17, PySpark 4.0.1, Delta Spark 4.0.1, Dagster 1.11.16, psycopg 3.2.13. The CircleCI job provisions these in a disposable environment and records resolved versions; the authoring container has not executed this stack. Only accepted runtime receipts can qualify the combination. The first cloud attempt failed; reviewing the selected browsers image exposed a Java 11 incompatibility. The corrected job uses a checksum-verified Temurin 17 bootstrap. This is not a confirmed diagnosis of the private failed-step log.
+The job installs a size/SHA-256-checked official Temurin 17 archive. Its exact release is recorded, but latest-GA selection and minor image tags are not an immutable toolchain lock; JDK signature verification is not claimed. The earlier native attempt failed; the later success does not establish the precise unread first failure cause.
 
-Use only a dedicated disposable database whose name begins with `ilc_demo`, on loopback. Initialization requires `ILC_ALLOW_NATIVE_DEMO=1`. Existing source tables are refused, not truncated. CircleCI is the active runner, with an exact native branch or explicit `run_native` parameter and a 35-minute command watchdog. Setup-branch synchronization does not duplicate builds. `infra/compose.native.yml` and `.github/workflows/native.yml` remain alternative prepared routes, not proof that they work. Consult [the runbook](docs/RUNBOOK.md) before running them.
+Only a dedicated disposable loopback database prefixed `ilc_demo` is allowed, with `ILC_ALLOW_NATIVE_DEMO=1`. Existing source tables are refused, not truncated. CircleCI native execution requires the scoped qualification branch or `run_native: true`; a 35-minute command watchdog and stage limits bound work. No new run is needed to review the existing receipts. Compose and GitHub Actions remain prepared alternative routes, not separately qualified routes. See [the runbook](docs/RUNBOOK.md).
 
 ## Scope limitations
 
-This is a bounded single-host implementation. Sources are fully captured under explicit row/byte budgets before incremental selection; no source-pushdown scalability is claimed. Each accepted generation writes a complete materialized candidate. No CDC/delete capture, distributed exactly-once, automatic retention, multi-host fencing or high availability is provided. Reference same-path SQLite backup/restore is tested; PostgreSQL/Delta disaster recovery and path migration remain unqualified. The synthetic manifest checks a shared fixture's source vector; it is not a distributed transaction over independent production systems.
+This is bounded single-host Spark `local[2]`, not distributed Big Data. Sources are fully captured under row/byte budgets before incremental selection; no source-pushdown scalability is claimed. Every accepted generation writes a complete candidate. No CDC/delete capture, distributed exactly-once, automatic retention, multi-host fencing or HA is provided.
 
-An owner with filesystem/database write access is outside the report API's security boundary. Cryptographic hashes detect drift; they are not signatures. Integrity checks read immutable artifacts and are not yet optimized for large reporting volumes. No customer code, schema, identifier or document is incorporated.
+Recovery was exercised after synchronous Spark materialization/stop and target relocation, not during an in-flight executor action. PostgreSQL remained available. The report reads JSON projections reconciled against Delta, not Direct Lake. Application API permissions do not establish database/OS/cloud isolation. Reference SQLite restore does not qualify PostgreSQL/Delta DR or path migration.
 
-## Governance and recovery increments
+Filesystem/database owners are outside the report API security boundary. Hashes detect drift but are not signatures. Integrity checks are not optimized for large reporting volumes. A synthetic source-vector check is not a distributed transaction across production systems. No client code, schema, identifier or document is incorporated.
 
-The metadata-only OpenMetadata publisher exports owners, classification, 15 base
-tables, 11 lineage edges and one accepted quality result. Its durable outbox
-records intent before mutation, reads results back, reuses an exact remote object
-after a lost response, and refuses an unresolved result or conflicting object.
-The real HTTP test peer is a **protocol emulator**. No OpenMetadata server or
-native catalog RBAC is claimed. See [governance](docs/GOVERNANCE.md).
+## Governance and reference restoration
 
-Reference backup holds writer locks and uses SQLite's backup API, including the
-governance outbox but excluding bearer policies. Restore refuses an existing root
-and a changed path identity. The demonstration preserves the original runtime,
-restores, rereads the report over HTTP and replays an accepted key without the
-HTTP source. See [backup and restore](docs/BACKUP_RESTORE.md).
+The OpenMetadata publisher exports owners, classification, 15 base tables, 11 lineage edges and one accepted DQ result. Its durable outbox records intent before mutation, reads back outcomes, reuses an exact remote object after response loss and refuses unresolved/conflicting outcomes. Tests use a **protocol emulator**, not a live OpenMetadata product. See [governance](docs/GOVERNANCE.md).
 
-Check the available capabilities without initializing services:
+Reference backup holds writer locks and uses SQLite's backup API, preserving the outbox but excluding bearer policies. Restore refuses an existing root or changed path identity. The demonstration preserves the old runtime, restores, rereads the HTTP report and replays offline. See [backup/restore](docs/BACKUP_RESTORE.md).
 
 ```bash
 python scripts/check_environment.py --output artifacts/environment.json --check-public-dns
 ```
 
-Exit 2 is an explicit missing-native-dependencies gate, not a failed business
-pipeline or a passing native test. The supplied environment receipt records
-missing psycopg/PySpark/Delta/Dagster, absent PostgreSQL/Docker binaries and public
-package/JAR DNS failures. That receipt describes the original authoring environment. The project now runs reference CI in CircleCI; it still uses no personal computer or client system as a fallback.
+Exit 2 means missing native prerequisites, not a successful native test. Older environment receipts describe the restricted authoring environment; they do not negate the later CircleCI native execution. No personal computer or client system is used as a fallback.
 
-## Publication status
+## Publication and evidence status
 
-The source is published in the private `mehdisafer/industrial-lakehouse-contracts` repository, under Draft PR #1. `main` is not merged. Reference CircleCI status is successful; native/provider acceptance, public visibility, license and final disclosure review remain open. The exact code qualification candidate is `fc1a9286c937deb09b87b97524c6835b24a1d516`; subsequent documentation-only updates do not claim a new runtime test. The package intentionally contains no invented open-source license grant. Until the owner chooses one, do not infer redistribution terms from the presence of source code.
+The repository remains private under Draft PR #1; `main` is not merged. Native functional G2 is accepted for **`fc1a9286c937deb09b87b97524c6835b24a1d516` only**, with original-XML archival and actual-credit reservations tracked in #3. Later documentation commits do not claim a new runtime execution. Reference CI success remains distinct from a full review of reference JUnit.
 
-**Résumé français.** P01 démontre actuellement un parcours de référence exécutable : contrats, trois sources réelles locales, contrôles métier, reporting autorisé et reprise après arrêt brutal. La restauration SQLite et les tests de protocole gouvernance complètent ces preuves. Il ne faut pas le présenter comme une plateforme Spark/Fabric/OpenMetadata qualifiée. Ces intégrations restent les prochaines étapes du même projet, avant le lancement de P05 puis P03.
+OpenMetadata (#4), Fabric/Power BI (#5), license, public visibility and final disclosure review remain open. No redistribution license is invented. P05/P03 remain queued.
+
+**Résumé français.** Le parcours natif PostgreSQL/PySpark/Delta/Dagster est désormais accepté sur un périmètre synthétique mono-hôte : contrats, qualité, réconciliation, reporting autorisé et reprise contrôlée. Les 14 reçus JSON concordent avec leurs empreintes. Le XML brut et les crédits restent des réserves documentaires ; OpenMetadata réel, Fabric/Power BI et la qualification de charge ne sont pas validés.

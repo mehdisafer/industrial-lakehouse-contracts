@@ -1,57 +1,53 @@
 # Qualification protocol and evidence scopes
 
-The deliverable contains a separately generated receipt and JUnit from a specific source commit. I distinguish implementation self-checks from an independent review. The reference suite includes actual SQLite transactions, real local files, loopback HTTP ingestion, API permission tests, abrupt subprocess exits, process-lock exclusion and immutable artifact checks. Fabric preflight tests are transport mocks. Native integration is separately marked and skipped by default.
+## Current decision
 
-| Acceptance ID | Reference observation required | Native/provider state |
+Bounded synthetic native functionality is accepted on `fc1a9286c937deb09b87b97524c6835b24a1d516` after review of supplied CircleCI logs, receipts and browser-rendered JUnit. Original raw XML hash and actual credit consumption remain reservations, not reasons to repeat a successful run. Full detail and all fourteen receipt digests are in [the native review](evidence/NATIVE_fc1a928_REVIEW.md).
+
+This is review within the implementation workstream, not an independent maintainer approval. Reconstructed receipt hashes are compared with a supplied verifier manifest, not signed provenance. Physical Delta files were not downloaded and reread during this review.
+
+| Acceptance ID | Reference observation | Native observation reviewed |
 |---|---|---|
-| V-P01-01 | Same key/plan gives same dataset, no extra generation | Native attempts started; no accepted receipt yet |
-| V-P01-02 | Hard process exit after target commit; unchanged watermark; resume offline; one publication | Native recovery proof still pending |
-| V-P01-03 | Duplicate, invalid decimal, schema drift reject publication | Not executed on provider |
-| V-P01-04 | Exact counts, keys, decimal sums on pinned bounded input | Native Spark reconciliation implemented; accepted evidence still pending |
-| V-P01-05 | Actual HTTP denies other-site/global views; read-only reporting DB | No Fabric/Power BI/OpenMetadata role qualification |
-| V-P01-06 | Actual report keeps accepted batch and declares degraded/stale | No Power BI report built |
+| V-P01-01 | Same key/plan, no extra generation | Same accepted batch, generation 1 |
+| V-P01-02 | Abrupt target-write exit and offline recovery | Exit 73; unchanged pre-resume watermark; Bronze/target reuse with HTTP source offline; generation 2 |
+| V-P01-03 | Invalid data/schema blocked | 2 duplicate rows, 1 invalid amount, 4,975 schema-invalid shipments quarantined; no promotion/checkpoint advance |
+| V-P01-04 | Counts/keys/amounts reconciled | 10,000 records, 3,980 facts, exact Decimal equality, ten final-path version-0 Delta table proofs |
+| V-P01-05 | Site-scoped actual HTTP denials | Expected 401/403/404 outcomes; application permissions only |
+| V-P01-06 | Accepted report retained and degradation exposed | Generation 1 preserved through three rejections; recovered generation 2 carries the intended +20 EUR SITE_A change |
 
-Additional cases cover pagination truncation/cycles, changed credentials' target via continuation URLs, incomplete capture, target/capture corruption, changed code/metadata with a reused key, contract evolution, lookback/ties, superseded attempts, accepted/rejected response loss and metadata-only entity onboarding.
+No native database-reader-role, OpenMetadata, Fabric or Power BI authorization is inferred from application API checks. Additional reference cases cover pagination/cycles, unsafe continuation URLs, capture corruption, changed code/contract with reused keys, lookback/ties, superseded attempts, response loss and metadata-only onboarding; they are not all individually exercised by the native selector.
 
-## Interpreting the numbers
+## Exact executed counts
 
-The fixture's base total is 10,000 records across five entities, not 10,000 rows in each table. Deliberate duplicates add one record. The evidence reports actual captured rows and serialized Bronze bytes. These are SMOKE-level, bounded data; no million-row or distributed-throughput claim is made.
+The native console collected 235 cases and selected **one**: `test_real_native_qualification`. It passed in a 62.078-second suite, with 234 deselected, zero skipped/error/failure cases and two dependency deprecation warnings. Six additional application scenarios belong to the separate qualification script, not six further pytest cases.
 
-The script records total reference wall time and an attempt duration. Neither is a p95 service SLO. No cloud billing, scale limit, cross-platform performance, HA, durability under power failure or restore RTO/RPO was measured. A bounded reference same-path backup/restore exercise is separate from those operational claims. A test marked skipped is not validated.
+Historical V3 reference evidence reported 193 passed and one native skip. Later source/CI changes introduced targeted tests; old counts are not transferred to the newer source. The reference job at `fc1a928` reports success, but its own detailed JUnit count has not been reviewed here.
 
-Historical local tests used preinstalled dependencies. CircleCI now reports successful reference jobs, with installation commands in their configuration; private step/JUnit evidence has not been independently inspected. The native combination, container build and GitHub Actions qualification remain unaccepted. Direct package pins do not constitute a transitive lock or security audit.
+The fixture contains 10,000 records across five entities, not 10,000 per table. A duplicate fixture adds one. Each clean accepted native receipt reports 1,621,039 Bronze bytes and 3,980 facts. The initial ordered amount is 8,857,766.18 EUR; recovery at fixture revision 1 is 8,857,786.18 EUR. The offline audit regenerated the deterministic fixture and recalculated site/total sums; it did not rerun a native pipeline.
 
-The receipt binds actual importing package bytes to the supplied checkout. A source-directory mismatch fails. A clean local Git commit provides a reproducible checkpoint; it does not by itself establish a remote publication or signed supply-chain attestation. The current repository publication is separately established by GitHub commits and branch readback.
+## Provenance and timing
 
-## Incremental verification layers
+All 14 JSON receipt contents, including the summary extracted from the native log and the complete uploaded schema rejection, reproduce the declared SHA-256 under the actual canonical serializer. All 20 runtime manifest files match retained source bytes whose `src` Git tree and pyproject blob match the authenticated executed tree. Aggregate code/contract fingerprints and both final-readback proof bindings also match.
 
-- `test_native_readback.py`: scalar precision and final-publication gates; the
-  Delta verifier is injected where unavailable. **No Spark execution.**
-- `test_governance.py`: immutable accepted export, pinned API paths, prerequisites,
-  scopes, owner/type/tag drift, unknown-response reconciliation and HTTP behavior.
-  The peer is MockTransport or `CatalogEmulator`. **No OpenMetadata product.**
-- `test_backup.py`: real SQLite backup, archive integrity, same-path restoration,
-  consumer result and replay, lock conflict, outbox preservation and unsafe input.
-- `test_qualification_harness.py`: native preconditions and separate fixture
-  schemas. **No native qualification.**
-- `qualify_recovery_governance.py`: real reference source/consumer and restore,
-  real loopback HTTP to a named catalog emulator, plus separately labelled mocked
-  response-loss test. Secrets/policies remain outside exported evidence.
+The JUnit browser copy contains a `chrome-extension://` script element. Its counter/testcase content agrees with the console, but original-byte identity cannot be claimed from this copy. Preserve that distinction instead of silently cleaning it into an alleged original. The Java archive SHA-256 is reported by CI; signature verification is `NOT_RUN`, and the binary was not downloaded for this review.
 
-The final JUnit and clean source-commit receipt, not this document's presence,
-state which checks ran. The original six P01 requirements remain qualified only
-on the reference path. The fuller native harness and bounded CircleCI route are
-implemented and have triggered real cloud attempts; accepted native receipts, live OpenMetadata, Fabric, Power BI, scale and PostgreSQL
-DR gates remain open. No new project starts on the basis of these unit tests.
+Command time was 272 seconds; the scenario harness recorded 139.895874 seconds; the successful resumed attempt recorded 22.657998 seconds. The UI showed a 4m39s job. These scopes overlap and must not be added or converted into a throughput/SLO/RTO or an actual credit bill. `billing_credits_observed` is null.
 
-## Native CI gate introduced 12 November 2026
+## Verification layers
 
-- `tests/test_native_ci_evidence.py`: 19 cases using synthetic receipts/JUnit; rejects skipped native tests, wrong commits, altered source bytes, incomplete semantic checks and mismatched Delta proofs. These tests do not run Spark or PostgreSQL.
-- `tests/test_java_bootstrap.py`: 22 offline metadata/archive tests, including a stub transport/process. They verify selection, hashes and refusal of unsafe input; they do not download or execute an actual JDK.
-- A combined local run of these files passed 41 tests. Earlier targeted native gates passed 37 tests with one native skip. These overlapping sets must not be added as distinct tests.
-- Two attempted complete local suite runs were interrupted by execution limits before completion. They are not full-suite PASS results. Compilation, shell syntax and YAML structural checks succeeded; CircleCI CLI validation and `testsuite doctor` were not run in the authoring environment.
-- The reference job at `fc1a928` reports success through GitHub. Its exact number of executed/skipped tests is not inferred from collection counts.
+- `test_native_readback.py`: precision and publication-gate tests with injected Delta verification where unavailable; not native execution by themselves.
+- `test_governance.py`: metadata/API/outbox checks using MockTransport or CatalogEmulator; not an OpenMetadata product.
+- `test_backup.py`: real SQLite/archive/same-path restore checks; not PostgreSQL DR.
+- `test_qualification_harness.py`: native preconditions and separate fixture schemas; not native execution by themselves.
+- `qualify_recovery_governance.py`: reference services, restore and explicitly emulated governance/response loss.
+- `test_native_gate.py` and `qualify_native.py`: actually executed native test and scenario harness on the reviewed CircleCI run.
+- `test_native_ci_evidence.py`: 19 synthetic receipt/JUnit verification cases.
+- `test_java_bootstrap.py`: 22 synthetic metadata/archive/transport/process cases.
 
-The native gate requires an actually executed native pytest, all six application scenarios, clean exact-SHA receipts, 10,000 captured records per clean scenario, 3,980 facts, 10 version-pinned Delta tables reread at their final path, a Dagster run ID and PostgreSQL 16 fixture receipts. A green job would establish that this gate returned zero, but final qualification additionally inspects the private artifacts.
+The latter two files had 41 local successes. An earlier 37-success/one-skip targeted set overlaps; do not add the counts. Two full local suite attempts were interrupted, not PASS. Compilation, shell syntax and YAML structural checks were successful; authoring-environment CircleCI CLI validation and testsuite doctor were not executed.
 
-These checks do not validate distributed scale, database-native RBAC, in-flight Spark action fencing, PostgreSQL restoration or any vendor tenant.
+## Remaining boundaries
+
+Direct dependency pins are not a complete transitive lock or a security audit. This native run uses Spark `local[2]` and in-process Dagster. Reporting consumes JSON projections reconciled to final-path Delta. The crash follows Spark stop/target relocation, not in-flight executor fencing. PostgreSQL stays available during recovery.
+
+Distributed scale, HA, database/OS/cloud-native isolation, PostgreSQL restore, live OpenMetadata, Fabric/Power BI and Direct Lake remain unqualified. Compose/Windows/GitHub Actions routes do not inherit CircleCI Linux results. Metadata-only expansion was demonstrated on the reference path, not newly on the native path. No new project starts merely because these bounded checks passed.
