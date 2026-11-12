@@ -1,4 +1,4 @@
-# P01: reference by default; one explicitly scoped native qualification branch.
+# P01: reference by default; native/catalogue qualifications are separately scoped.
 version: 2.1
 
 parameters:
@@ -6,6 +6,10 @@ parameters:
     type: boolean
     default: false
   run_native:
+    type: boolean
+    default: false
+
+  run_catalogue:
     type: boolean
     default: false
 
@@ -103,19 +107,57 @@ jobs:
           path: .runtime/circleci-native-qualification/evidence
           destination: native-evidence
 
+
+  catalogue:
+    machine:
+      image: ubuntu-2404:current
+    resource_class: large
+    parallelism: 1
+    environment:
+      ILC_ALLOW_OPENMETADATA_DEMO: "1"
+      PYTHONUTF8: "1"
+      TZ: UTC
+    steps:
+      - checkout
+      - run:
+          name: Real OpenMetadata - bounded deployment, roles and accepted metadata
+          no_output_timeout: 8m
+          command: timeout --signal=TERM --kill-after=60s 25m bash scripts/run_circleci_openmetadata.sh
+      - store_test_results:
+          path: artifacts/openmetadata
+      - store_artifacts:
+          path: artifacts/openmetadata
+          destination: openmetadata-diagnostics
+      - store_artifacts:
+          path: .runtime/openmetadata-live/evidence
+          destination: openmetadata-evidence
+
 workflows:
   reference-qualification:
     unless:
       or:
         - << pipeline.parameters.run_native >>
+        - << pipeline.parameters.run_catalogue >>
         - equal: ["qualify/p01-native-20261112", << pipeline.git.branch >>]
+        - equal: ["qualify/p01-openmetadata-20261113", << pipeline.git.branch >>]
         - equal: ["circleci-project-setup", << pipeline.git.branch >>]
     jobs:
       - reference
   native-qualification:
     when:
-      or:
-        - << pipeline.parameters.run_native >>
-        - equal: ["qualify/p01-native-20261112", << pipeline.git.branch >>]
+      and:
+        - not: << pipeline.parameters.run_catalogue >>
+        - or:
+            - << pipeline.parameters.run_native >>
+            - equal: ["qualify/p01-native-20261112", << pipeline.git.branch >>]
     jobs:
       - native
+  catalogue-qualification:
+    when:
+      and:
+        - not: << pipeline.parameters.run_native >>
+        - or:
+            - << pipeline.parameters.run_catalogue >>
+            - equal: ["qualify/p01-openmetadata-20261113", << pipeline.git.branch >>]
+    jobs:
+      - catalogue
