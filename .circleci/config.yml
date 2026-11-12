@@ -1,8 +1,11 @@
-# P01 reference qualification. No secrets, vendor deployment or production access.
+# P01: reference by default; one explicitly scoped native qualification branch.
 version: 2.1
 
 parameters:
   run_testsuite_doctor:
+    type: boolean
+    default: false
+  run_native:
     type: boolean
     default: false
 
@@ -33,8 +36,6 @@ jobs:
       - run:
           name: Validate metadata contracts
           command: python -m ilc.cli validate
-      # Run doctor once as a separate, parameterized qualification.
-      # It executes tests, so default false avoids double work on every push.
       - when:
           condition: << pipeline.parameters.run_testsuite_doctor >>
           steps:
@@ -62,7 +63,59 @@ jobs:
           path: .runtime/circleci-recovery/evidence
           destination: recovery-evidence
 
+  native:
+    docker:
+      # This variant supplies Java as well as Python; no apt-get or paid orb.
+      - image: cimg/python:3.12-browsers
+      - image: postgres:16
+        environment:
+          POSTGRES_DB: ilc_demo
+          POSTGRES_USER: ilc_demo
+          POSTGRES_PASSWORD: ephemeral-ci-only
+    resource_class: large
+    parallelism: 1
+    environment:
+      PYTHONUTF8: "1"
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD: "1"
+      PIP_DISABLE_PIP_VERSION_CHECK: "1"
+      PIP_DEFAULT_TIMEOUT: "30"
+      ILC_ALLOW_NATIVE_DEMO: "1"
+      ILC_NATIVE_TESTS: "1"
+      ILC_SOURCE_DSN: postgresql://ilc_demo:ephemeral-ci-only@127.0.0.1:5432/ilc_demo
+      ILC_STATE_DSN: postgresql+psycopg://ilc_demo:ephemeral-ci-only@127.0.0.1:5432/ilc_demo
+      SPARK_LOCAL_IP: 127.0.0.1
+      OMP_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
+      TZ: UTC
+    steps:
+      - checkout
+      - run:
+          name: Native qualification - bounded install, real services and evidence gate
+          no_output_timeout: 8m
+          command: timeout --signal=TERM --kill-after=30s 35m bash scripts/run_circleci_native.sh
+      - store_test_results:
+          path: artifacts/native/tests
+      - store_artifacts:
+          path: artifacts/native
+          destination: native-diagnostics
+      - store_artifacts:
+          path: .runtime/circleci-native-qualification/evidence
+          destination: native-evidence
+
 workflows:
   reference-qualification:
+    unless:
+      or:
+        - << pipeline.parameters.run_native >>
+        - equal: ["qualify/p01-native-20261112", << pipeline.git.branch >>]
+        - equal: ["circleci-project-setup", << pipeline.git.branch >>]
     jobs:
       - reference
+  native-qualification:
+    when:
+      or:
+        - << pipeline.parameters.run_native >>
+        - equal: ["qualify/p01-native-20261112", << pipeline.git.branch >>]
+    jobs:
+      - native
