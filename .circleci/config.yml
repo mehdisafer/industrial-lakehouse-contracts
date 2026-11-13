@@ -46,6 +46,9 @@ jobs:
       - run:
           name: Validate metadata contracts
           command: python -m ilc.cli validate
+      - run:
+          name: Record the complete reference test inventory
+          command: python scripts/verify_reference_ci.py collect --output artifacts/reference/test-inventory.json
       - when:
           condition: << pipeline.parameters.run_testsuite_doctor >>
           steps:
@@ -70,6 +73,12 @@ jobs:
       - run:
           name: Exercise reference recovery and governance protocol
           command: python scripts/qualify_recovery_governance.py --output .runtime/circleci-recovery --rows 10000
+      - run:
+          name: Reconcile original JUnit, reference scenarios and source identity
+          command: python scripts/verify_reference_ci.py verify --output artifacts/reference/verified-evidence.json
+      - store_artifacts:
+          path: artifacts/reference
+          destination: reference-verification
       - store_artifacts:
           path: test-results
           destination: test-results
