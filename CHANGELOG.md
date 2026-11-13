@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-11-13 — MIT licensing decision
+
+- Adopted the standard MIT License for the original project code and associated documentation, with Copyright (c) 2026 Mehdi Safer.
+- Reconciled the README, contribution terms, licensing guide and publication checklist with the explicit licensing decision.
+- Declared `MIT` and the root `LICENSE` in Python package metadata. Raised only the build-backend minimum from setuptools 75 to 77.0.3 for PEP 639 support; runtime/integration dependency versions remain unchanged.
+- Added checks for the source notice, declared metadata and licence text embedded in the installed editable distribution.
+
+The disclosure review and repository administration remain separate release gates.
+No visibility change, public service deployment or change to third-party terms
+is made by this licensing increment. Historical execution records remain unchanged.
+
 ## 2026-11-13 — validator hardening and auditable reference CI
 
 - Fixed reproduced documentation-check false successes for code-labelled references, malformed HTTP destinations and revision substrings; resolved heading-ID collisions.
@@ -19,7 +30,7 @@
 - Added contribution/security entry points, structured issue forms, a PR checklist and local-file ignore rules.
 
 Runtime algorithms, dependency versions, integration baselines, licensing and
-repository visibility are unchanged by these maintenance passes.
+repository visibility were unchanged by those two maintenance passes.
 
 ## 2026-11-13 — initial portfolio preview
 
@@ -29,5 +40,6 @@ repository visibility are unchanged by these maintenance passes.
 - Reviewed artifact/source identities, with original XML and billing reservations retained.
 - Reachable-history disclosure gate and manually selected alternative GitHub Actions routes.
 
-Fabric/Power BI deployment, distributed performance, HA, PostgreSQL/Delta disaster
-recovery and an open-source licence grant remain outside this preview.
+Fabric/Power BI deployment, distributed performance, HA and PostgreSQL/Delta
+disaster recovery were not included. No open-source licence had yet been selected
+at that checkpoint; the later explicit MIT decision is recorded above.

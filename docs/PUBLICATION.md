@@ -44,14 +44,20 @@ change only this repository through GitHub Settings and verify anonymous access
 to the README and source. A merge, changelog entry or CI success is not evidence
 that the visibility setting has changed.
 
-Review the description, topics, contribution/security entry points and licence
-status as part of that release decision. No unspecified open-source licence is
-granted; see [LICENSING.md](LICENSING.md). GitHub Pages or an always-on service is
-not implicitly created by publishing source.
+The original project uses the [MIT License](../LICENSE), approved on 13 November
+2026. Keep the root notice, package metadata and contribution terms consistent;
+third-party components retain their own licences as described in
+[LICENSING.md](LICENSING.md). This licensing decision does not close the disclosure
+review or change repository visibility.
+
+Review the description, topics, required CI checks and contribution/security entry
+points as part of the release decision. Verify the applied branch rules through
+GitHub; a documented proposal is not an enforced server-side rule. GitHub Pages
+or an always-on service is not implicitly created by publishing source.
 
 ## Release boundary
 
 Keep demonstration services loopback-bound. Do not add public ingress, provider
-credentials, paid capacity, destructive cleanup or new licensing terms as a side
-effect of source publication. The [security guide](SECURITY.md) and
+credentials, paid capacity, destructive cleanup or a change of licence terms as an
+unrelated side effect. The [security guide](SECURITY.md) and
 [remaining gates](PROVIDER_GATES.md) define the operational boundaries.
