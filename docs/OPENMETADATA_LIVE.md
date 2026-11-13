@@ -1,166 +1,120 @@
-# P01 G3a — real OpenMetadata qualification
+# OpenMetadata integration qualification
 
-I qualify the catalogue product separately from the already reviewed native G2
-run. The new command uses a freshly accepted **reference_sqlite** generation,
-then sends actual HTTP requests to OpenMetadata 1.12.0. This is not an emulator,
-and it does not rerun or claim a new combined Spark/catalogue qualification.
-The native G2 evidence at `fc1a928` remains unchanged.
+## Accepted scope
 
-## Observed checkpoint — 13 November 2026 (Europe/Paris)
+I qualified the API publisher against **OpenMetadata 1.12.0** at
+`cd09de03d658cb66d5aaa29a8ec677fd17a3f977`. The successful CircleCI execution and
+supplied artifact review establish the bounded G3a baseline. The
+[evidence record](evidence/OPENMETADATA_cd09de0_REVIEW.md) contains the reviewed
+identities, counts, hashes and warnings.
 
-**Both catalogue and reference jobs report SUCCESS on
-`cd09de03d658cb66d5aaa29a8ec677fd17a3f977`.** The catalogue success was posted
-at 2026-11-12 23:43:13 UTC. The configured live harness completed; private
-artifact contents, actual image digests, role/readback traces, cleanup outcomes
-and credit usage have not yet been independently inspected. **Final G3a
-acceptance remains open in issue #4.**
+The catalogue receives newly accepted **reference_sqlite** generations. Native
+PostgreSQL/Spark/Delta/Dagster was qualified separately at `fc1a928`; these two
+baselines do not claim a combined native-to-catalogue execution.
 
-- [Successful catalogue job](https://app.circleci.com/workflow/44a92cbe-4817-45b8-8df2-70e106367dc9/job/167d2f85-ca05-45a5-a6a7-937bf513354b)
-- [Successful reference job](https://app.circleci.com/workflow/a92aa335-2ecb-4898-ae2a-64855831f898/job/f2c4bd4b-baea-40d1-ab3d-ef6d76e82739)
+## Deployment topology
 
-The initial catalogue job at `a99c173` failed; its exact failed step remains
-unread. The corrective commit fixes two defects established from source/offline
-reproduction: gzip double decoding and the deprecated executable-suite check.
-Later success is not proof of the unread first failure's cause. Two catalogue
-attempts and two reference jobs were triggered; no additional native/Spark run.
+[compose.openmetadata.yml](../infra/compose.openmetadata.yml) starts PostgreSQL 16
+for catalogue state, Elasticsearch 9.3.0, the OpenMetadata migration container and
+the server on a disposable CircleCI machine. Python 3.12 runs the qualification
+client. The adapter uses the pinned upstream API revision
+`caa14bfd42af6ec84464aa81815addd3e0cd2902`.
 
-Local targeted checks passed 65 cases (33 harness, 32 publisher), using synthetic
-transport/receipt inputs where labelled. An earlier recovered-V3 materialization
-run passed 219 cases with one native skip; it did not contain the 41 previously
-added GitHub CI tests and is not the complete current hosted suite. Exact hosted
-reference test counts are not inferred. The documentation-only checkpoint does
-not trigger another run; inspect the existing artifacts instead.
+Only `127.0.0.1:8585` is published on the host. Database, search and administration
+ports have no host-published listener. Credentials and signing keys are generated
+per job outside the artifact paths. Self-signup and the Airflow ingestion-service
+client are disabled.
 
-## Reproducible deployment, not a shared environment
+A fresh job-owned Compose project and output directory are required. The script
+refuses an existing project or bootstrap entity. At exit, it stops its own
+services and restores the temporary VM sysctl setting without deleting volumes.
+The reviewed attempt records zero exit codes for both cleanup operations.
 
-`infra/compose.openmetadata.yml` starts PostgreSQL 16, Elasticsearch 9.3.0,
-OpenMetadata 1.12.0 migration and server containers on a disposable CircleCI VM.
-The version remains pinned to the adapter's reviewed API. The upstream release
-reference is `caa14bfd42af6ec84464aa81815addd3e0cd2902`. This is a qualification
-version, not a claim that it is the latest supported production release.
+The images use version-selected tags. `images.json` records the digests actually
+resolved; tags are not a fully immutable dependency lock. This is an isolated
+qualification topology, not a public hosting or production security template.
 
-Only the server API is published, on `127.0.0.1:8585`. PostgreSQL, Elasticsearch
-and the server administration port have no host-published listener. Containers
-have no access to client data, personal files or production credentials. The
-service's default administrator is a disposable fixture on this isolated host,
-never a credential for an external account. Publisher and reader passwords,
-JWT signing keys and database/encryption credentials are generated per job.
-They remain outside Git and artifact paths. Self-signup and the Airflow ingestion
-service client are disabled.
+## Identities and permissions
 
-A fresh `ilcg3_<job>_<sha>` Compose project is required. The script refuses an
-existing project, output directory or bootstrap entity rather than reinitializing
-it. At exit it stops only its own services; named volumes are not deleted or
-shared. CircleCI disposes of the VM. No DROP, TRUNCATE, prune, persistent cloud
-resource, public ingress, paid refill or personal workstation is involved.
+The administrator initialises the fixture service, owner team, classification,
+policies, roles and two non-administrator users. Actual publication uses the writer;
+independent readback uses the reader.
 
-Image tags are version-selected but mutable. `images.json` records each resolved
-repository digest and image identity. The run checks the actual API version.
-These observations are not a signed supply-chain attestation or a complete
-transitive lock. PostgreSQL here stores catalogue metadata, not the P01 source.
+The writer may create/edit database, schema, table and test metadata. It cannot
+administer policies, roles, users, teams, tags, classifications or services, and
+cannot delete data entities. The reader has an explicit mutation deny.
 
-## Roles and actual acceptance checks
+These checks establish resource-type role enforcement on a dedicated instance.
+They do not establish per-namespace multitenancy, TLS or SSO.
 
-`qualify_openmetadata.py` creates a dedicated service, owner team, synthetic tag,
-policies, roles and two non-administrator users. Admin credentials are used only
-for bootstrap and controlled sentinel preparation. Publication uses the writer
-session; independent catalogue reads use the reader session.
+## Live scenarios
 
-The writer may create/edit database/schema/table/test metadata and read metadata.
-It cannot create/edit/delete policy, role, user, team, tag, classification or
-service metadata, and cannot delete data entities. The reader has an explicit
-mutation deny. This is **resource-type RBAC on a dedicated server**, not a claim
-of multi-tenant, per-namespace isolation. HTTP (not TLS) is deliberate loopback
-qualification; this deployment is not a production security template.
-
-| Gate | Required live observation |
+| ID | Required observation |
 |---|---|
-| G3-01 | Actual 1.12.0 product, authenticated bootstrap, recorded image digests |
-| G3-02 | Two accepted generations: 15 table definitions, 11 lineage relations and one DQ result per generation; column types, owners, tags and implicit basic test suites reread |
-| G3-03 | Repeating a verified publication performs no additional write |
-| G3-04 | Client transport deliberately loses one response after a real successful database write; a new publisher instance reconciles its durable intent and the same server UUID; exactly one database PUT |
-| G3-05 | Unauthenticated read 401, reader table modification 403, writer policy creation 403; the forbidden policy is absent and accepted metadata unchanged |
-| G3-06 | A deliberately conflicting database is preserved with no publisher mutation; generation 1 remains unchanged after generation 2 |
+| G3-01 | Actual product version and authenticated API access |
+| G3-02 | Two accepted generations; 15 tables, 11 lineage edges and one DQ result per generation; owners, tags, types and exact-parent basic suites reread |
+| G3-03 | Replayed publication produces no additional mutation |
+| G3-04 | A response is suppressed after a real successful database write; the next publisher reconciles the same server object, with one database PUT |
+| G3-05 | Unauthenticated read returns 401; reader mutation and writer policy creation return 403; forbidden object remains absent |
+| G3-06 | A conflicting remote database is preserved without publisher mutation; the first generation remains unchanged |
 
-The response-loss experiment forwards real HTTP to the real server. Only the
-client-visible response is suppressed after success; no fake server response or
-MockTransport is used in the live command. It does not prove a physical network
-outage, concurrent cross-host writers or distributed exactly-once semantics.
+The loss experiment uses real HTTP and the actual server. It suppresses the
+client-visible response after success; it does not simulate a physical network
+outage. Source rows, samples and credentials are excluded from publication.
+The static HTML readback is derived from API responses, not the product UI.
 
-The harness refuses success unless all six gates pass. Metadata definitions and
-aggregate reconciliation are exported, never source rows, samples or credentials.
-A static HTML view is generated from the actual API readback; it is explicitly
-not a screenshot of the OpenMetadata UI. Airflow/SDK connector ingestion is not
-part of this API-publisher qualification.
+## Execution and resource bounds
 
-## CircleCI route and credit discipline
+The dedicated CircleCI `catalogue` job uses an Ubuntu 24.04 machine executor,
+class `large`, one job and no matrix. It is selected only by the qualification
+branch or an explicit `run_catalogue: true` parameter. Do not enable it together
+with `run_native`.
 
-The dedicated `catalogue` job uses `machine: ubuntu-2404:current`, class `large`
-(4 vCPU / 15 GB), Docker Compose and a Python 3.12 test container. A 25-minute
-command watchdog includes image pulls, migration and qualification, with shorter
-stage limits. VM provisioning, checkout and artifact upload are outside that
-watchdog. It is not a billing cap. The documented gen1 large rate is 20 credits
-per minute: 500 command-time credits at the ceiling plus overhead, **not an
-observed bill**. Actual credits remain unknown until account usage is read.
+[scripts/run_circleci_openmetadata.sh](../scripts/run_circleci_openmetadata.sh)
+sets a 25-minute command watchdog with shorter stage limits. The reviewed command
+took 158 seconds; the live harness recorded 20.831684 seconds. These scopes overlap.
+Runner provisioning and artifact transfer are outside the watchdog, and billed
+credits remain unobserved. No automatic rerun or paid refill is configured.
 
-Only a deliberate push to `qualify/p01-openmetadata-20261113` or an explicit
-`run_catalogue: true` selects this route. Do not combine `run_catalogue` and
-`run_native`. Ordinary feature pushes keep reference tests; setup synchronization
-runs neither heavy job. The existing native and reference job bodies are
-unchanged. There is no matrix, automatic retry, remote-Docker surcharge, paid
-cache or plan change. An unexplained failure requires reading diagnostics, not
-blindly rerunning or increasing resources.
+For a separately authorised loopback server, the standalone publisher commands
+are described in [GOVERNANCE.md](GOVERNANCE.md). Review the exact target and credentials
+before enabling writes; the qualification setup is not a shared-server migration.
 
-## Evidence and interpretation
+## Evidence inventory
 
-- `openmetadata-diagnostics/images.json`: resolved real container identities.
-- `openmetadata-diagnostics/job-attempt.json`: exact commit, phase, exit code and
-  elapsed command scope; no inferred billing.
-- `openmetadata-diagnostics/{migration,services,qualification}.log`: bounded,
-  credential-redacted diagnostics.
-- `openmetadata-diagnostics/harness-junit.xml`: **offline harness safeguard tests**,
-  not live product test counts.
-- `openmetadata-evidence/qualification-openmetadata.json`: actual six-gate result,
-  source profile, source fingerprints and limits.
-- `openmetadata-evidence/generation*-{acceptance,plan,published,readback}.json`:
-  accepted input and independently reread catalogue state.
-- HTTP method/path/status trace, conflict receipt and SHA-256 manifest.
+| Artifact | Purpose |
+|---|---|
+| `openmetadata-diagnostics/images.json` | Resolved image identities |
+| `openmetadata-diagnostics/job-attempt.json` | Commit, phase, exit, duration and cleanup |
+| `openmetadata-diagnostics/harness-junit.xml` | Offline safeguards, not the live scenario count |
+| `openmetadata-diagnostics/qualification.log` | Client execution and six-gate result |
+| `openmetadata-evidence/qualification-openmetadata.json` | Live outcome, source profile, hashes and exclusions |
+| `generation*-acceptance/plan/published/readback.json` | Accepted source and remote publication/readback chain |
+| `http-traces.json`, conflict receipt and manifest | Mutation history, preserved conflict and artifact identities |
 
-A green CI job and these artifacts are distinct evidence levels. Final acceptance
-requires reading the actual result and its identities. Missing artifacts are not
-success. Tests that use stub HTTP transports are explicitly labelled offline.
-The local materialization contains original V3 sources plus the new harness; the
-previously added Java/native-evidence CI tests remain on GitHub and are exercised
-by the reference job, not falsely included in a local test count.
+The reviewed run has 33 offline safeguard tests and six separate live scenarios.
+The artifact review reconciled 30 table UUIDs, 170 column definitions, 22 lineage
+edges, two DQ results and two basic suites. All fifteen supplied artifact digests
+matched, with HTML explicitly reconstructed rather than described as a raw download.
 
-G3a is **implemented with successful live CI; private artifact review remains
-pending** on the exact runtime commit above. The PR/issue retain both attempts. Raw native JUnit
-archival and credit accounting remain G2 reservations; they do not trigger another
-Spark run. Fabric/Power BI remains an independent authorized-tenant gate. P05/P03
-stay queued; `main`, repository visibility and licensing are unchanged.
+## Compatibility and retained reservations
 
-## Primary references checked for this implementation
+The tracing transport decodes compressed responses once under a byte budget and
+removes obsolete framing headers. Basic-suite verification requires `basic=true`
+and an exact `basicEntityReference` to the table UUID/type; it does not use the
+deprecated `executable` field. Regression tests cover both behaviours.
 
-- Pinned deployment: https://github.com/open-metadata/OpenMetadata/blob/caa14bfd42af6ec84464aa81815addd3e0cd2902/docker/docker-compose-quickstart/docker-compose-postgres.yml
-- Login schema: https://github.com/open-metadata/OpenMetadata/blob/caa14bfd42af6ec84464aa81815addd3e0cd2902/openmetadata-spec/src/main/resources/json/schema/auth/loginRequest.json
-- User API: https://github.com/open-metadata/OpenMetadata/blob/caa14bfd42af6ec84464aa81815addd3e0cd2902/openmetadata-service/src/main/java/org/openmetadata/service/resources/teams/UserResource.java
-- Database-service request: https://github.com/open-metadata/OpenMetadata/blob/caa14bfd42af6ec84464aa81815addd3e0cd2902/openmetadata-spec/src/main/resources/json/schema/api/services/createDatabaseService.json
-- Policy operation examples: https://github.com/open-metadata/OpenMetadata/blob/caa14bfd42af6ec84464aa81815addd3e0cd2902/openmetadata-service/src/main/resources/json/data/policy/IngestionBotPolicy.json
-- CircleCI Linux VM: https://circleci.com/docs/guides/execution-managed/using-linuxvm/
-- Plan availability: https://circleci.com/pricing/
-- Credit rates: https://circleci.com/pricing/price-list/
+Migration completed but emitted missing-relation queries during empty-database
+initialisation, `SET LOCAL` warnings and a Logback core/classic mismatch. The review
+preserves those observations. Original browser-rendered JUnit bytes, actual billing,
+image signature verification, HA/restore/retention, TLS/SSO, Airflow/SDK ingestion
+and UI inspection remain outside the accepted proof.
 
-## Transport and test-suite compatibility correction
+## Pinned upstream references
 
-An offline compressed-response reproduction exposed a double-decompression bug
-in the new tracing transport. It now decodes once under a byte budget and removes
-upstream encoding/length headers before returning the decoded HTTP response.
-Two tests cover gzip decoding and the decompressed response limit.
+- [Deployment definition](https://github.com/open-metadata/OpenMetadata/blob/caa14bfd42af6ec84464aa81815addd3e0cd2902/docker/docker-compose-quickstart/docker-compose-postgres.yml)
+- [User API](https://github.com/open-metadata/OpenMetadata/blob/caa14bfd42af6ec84464aa81815addd3e0cd2902/openmetadata-service/src/main/java/org/openmetadata/service/resources/teams/UserResource.java)
+- [Test-suite schema](https://github.com/open-metadata/OpenMetadata/blob/caa14bfd42af6ec84464aa81815addd3e0cd2902/openmetadata-spec/src/main/resources/json/schema/tests/testSuite.json)
 
-The pinned OpenMetadata 1.12.0 test-suite schema deprecates `executable` in favour
-of `basic` and `basicEntityReference`. The readback now requires `basic=true` and
-the exact parent table UUID/type; it does not accept an absent or foreign suite.
-Five additional offline cases cover that binding. These are verified source and
-unit-test corrections, not a diagnosis inferred from an unread cloud log.
-
-- Pinned suite schema: https://github.com/open-metadata/OpenMetadata/blob/caa14bfd42af6ec84464aa81815addd3e0cd2902/openmetadata-spec/src/main/resources/json/schema/tests/testSuite.json
+The version is the adapter's qualification baseline, not a claim about the latest
+production release. [Remaining gates](PROVIDER_GATES.md) cover subsequent platform work.

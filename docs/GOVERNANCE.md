@@ -1,98 +1,95 @@
-# OpenMetadata publication and durable delivery
+# Accepted-generation metadata publication
 
-## Qualified API contract
+## Purpose and API contract
 
-The publisher targets OpenMetadata **1.12.0**, upstream commit
-`caa14bfd42af6ec84464aa81815addd3e0cd2902`. Request schemas and Java resource
-contracts, rather than a floating SDK or guessed endpoint, define the adapter.
-Unit tests and a named protocol emulator remain offline evidence. The separate
-actual-product run at `cd09de0` is now accepted after supplied-artifact review;
-see [G3a evidence](evidence/OPENMETADATA_cd09de0_REVIEW.md).
+I publish metadata from a verified accepted generation, not directly from a
+partially loaded source. The publisher binds schema, ownership, classification,
+lineage and aggregate quality to that generation's identity.
 
-Results use `POST /api/v1/dataQuality/testCases/testCaseResults/{fqn}` and GET on
-the same route with millisecond `startTs/endTs`. Test-case readback requests
-`fields=testDefinition`. The server implicitly creates a basic suite for a
-new table-linked case; no unsupported `testSuite` request property is invented.
-The live readback verifies `basic=true` and the exact parent-table UUID/type.
+The adapter targets OpenMetadata 1.12.0 at upstream revision
+`caa14bfd42af6ec84464aa81815addd3e0cd2902`. Its real API qualification at
+`cd09de03d658cb66d5aaa29a8ec677fd17a3f977` is accepted; see the
+[evidence record](evidence/OPENMETADATA_cd09de0_REVIEW.md).
+Unit tests and the named catalogue emulator remain separate protocol evidence.
 
-## Destination and permissions
+## Metadata exported
 
-The publisher admits only explicit loopback `/api` settings, the exact version,
-a dedicated `ilc_` database service, mapped owner teams and the synthetic tag.
-Redirects, credential-bearing URLs and oversized responses are refused.
-The publisher itself does not create admin identities, services, teams or tags.
+For the five-entity contract, each generation exports fifteen definitions:
+five raw-string Bronze tables, five typed Silver tables and five Gold tables.
+The plan includes owner-team references, `PUBLIC_SYNTHETIC` classification,
+eleven table-level lineage edges and one external reconciliation result.
 
-Its separate disposable CI harness bootstraps prerequisites using an admin fixture,
-then publishes with a non-admin writer and rereads with a distinct reader. Actual
-server logs show the expected unauthenticated 401 and mutation/administration 403
-responses. This is resource-type RBAC in a dedicated instance, not multi-tenant
-namespace isolation. Supply credentials outside plans, journals and Git.
+Source rows, samples, rejected records, credentials and dashboard assets are not
+exported. The contract-generated site dimension has no fabricated upstream table.
+The source profile remains in the receipt. Accepted aggregate DQ is published;
+this is not a complete rejected-run incident feed.
 
-## Export contents
+Each generation has an immutable catalogue database name. This preserves historical
+identity but increases metadata volume; automatic catalogue retention is not
+implemented. [DATA_MODEL.md](DATA_MODEL.md) explains the business and table grains.
 
-Only a reread accepted generation can create an export plan. Generation drift
-while building it is rejected. For the five-entity contract, each plan contains
-fifteen tables: five raw-string Bronze, five typed Silver and five Gold; owner
-team references; synthetic classification; eleven table-level lineage edges; and
-one external reconciliation result bound to acceptance time/digest.
+## Delivery, readback and conflicts
 
-The contract-generated site dimension has no fabricated upstream table. No source
-records, samples, rejected rows, credentials, private host paths or dashboard
-assets are exported. The source profile is retained. Accepted aggregate DQ is
-published, not a complete rejected-run incident feed.
+The outbox records an immutable plan and REQUESTED/VERIFIED states. Intent is
+persisted before mutation, and every entity, edge and DQ result is then reread.
+A later invocation checks remote state before attempting another effect.
 
-Each generation receives an immutable catalogue database name. This preserves
-provenance at the expense of metadata growth. Automatic retention/deletion is
-not implemented or implied by the demonstration.
+An exact existing object after a lost response is reused. Unresolved absence,
+inconsistent state or a foreign object stops the operation; the publisher does
+not overwrite, delete or silently repair it. A local writer lock is not cross-host
+fencing. A generation change during export construction is also rejected.
 
-## Durable intent, replay and conflicts
+The reviewed live run observed mutation-free replay and preserved a conflicting
+object with no mutation. Its response-loss test suppressed the client-visible
+response after a real successful write, then reconciled the same object.
+It was not a physical network-outage experiment.
 
-The outbox stores an immutable plan and REQUESTED/VERIFIED states. Intent is
-persisted before mutation; every entity, edge and DQ result must subsequently be
-read back and matched. A later invocation reconciles remote state first.
+## Permissions and destination
 
-A lost response with an exact existing object is reused; unresolved absence or
-inconsistency after a requested effect stops instead of blindly repeating it.
-Foreign objects are not overwritten. No automatic DELETE or repair is performed.
-A local writer lock does not provide cross-host fencing.
+The standalone publisher admits explicit loopback `/api` settings, the exact
+server version, a dedicated `ilc_` service and existing owner-team/tag mappings.
+It refuses redirects, credential-bearing URLs and oversized responses. Tokens
+remain outside plans, journals and Git. The publisher does not initialise users,
+services, teams or classifications.
 
-In the reviewed actual run, replay has zero mutations, conflict handling has five
-reads and zero mutations, and generation-2 recovery has exactly one database PUT
-whose successful response was deliberately suppressed in the client transport.
-This is a controlled client fault, not a physical network outage. The shared test
-definition is reused, explaining 33 initial mutations versus 32 in generation 2.
+The separate disposable qualification harness bootstraps those prerequisites,
+then publishes with a non-admin writer and rereads with a separate reader. Actual
+server denials establish the tested resource-type roles, not multi-tenant namespace
+isolation. Full deployment and role details are in [OPENMETADATA_LIVE.md](OPENMETADATA_LIVE.md).
 
 ## Commands
 
+Build a metadata-only plan from an accepted reference runtime:
+
 ```bash
-# Build a metadata-only plan without contacting the catalogue.
 python scripts/governance.py --root .runtime/pipeline \
   --settings governance/openmetadata.example.json --output artifacts/catalog-plan.json
+```
 
-# On an explicitly authorized real loopback instance only;
-# supply ILC_OPENMETADATA_TOKEN outside Git first.
+For an explicitly authorised real loopback instance, supply
+`ILC_OPENMETADATA_TOKEN` outside Git and enable the two write flags:
+
+```bash
 python scripts/governance.py --root .runtime/pipeline \
   --settings governance/openmetadata.example.json \
   --publish --allow-catalog-writes --output artifacts/catalog-receipt.json
 ```
 
-The CLI defaults to the reference journal. An explicit native profile is subject
-to separate dependencies, database restrictions and opt-in; that combined pathway
-has not been executed in the reviewed G3a run.
+These commands expect a previously accepted runtime at the stated path. They do
+not create one. The CLI defaults to the reference journal; a native-profile
+publication requires its separate prerequisites and has not been qualified as a
+combined path.
 
-## Evidence boundaries
+## Result semantics
 
-The live catalogue used newly accepted reference_sqlite generations, not a repeated
-native Spark qualification. `REMOTE_METADATA_READ_BACK` is an operation receipt;
-actual deployment/RBAC/recovery evidence comes from the separate live harness and
-its reviewed server traces. An earlier data receipt's `catalog_provider=NOT_RUN`
-is not rewritten after the subsequent metadata operation.
+`REMOTE_METADATA_READ_BACK` describes the publication operation. Deployment,
+server-role and recovery evidence comes from the live qualification, not from that
+single receipt alone. An earlier data-acceptance receipt's `catalog_provider=NOT_RUN`
+is not rewritten after the subsequent catalogue operation.
 
-Fifteen artifact hashes, thirty table UUIDs, 170 columns, twenty-two edges, two DQ
-results and two basic suites reconcile. Original XML bytes and billed credits
-remain unverified. The HTML is an API-derived snapshot, not an OpenMetadata UI
-screenshot. TLS/SSO, HA, catalogue restore/retention, SDK/Airflow connectors and
-multi-tenant security remain outside scope.
+Result submission uses the pinned test-case result endpoint and basic suites bound
+to the exact parent table. The live transport decodes compressed responses once
+within its byte budget. Upstream API details and compatibility tests are documented
+in [the live guide](OPENMETADATA_LIVE.md#compatibility-and-retained-reservations).
 
-See [live deployment](OPENMETADATA_LIVE.md), [qualification](QUALIFICATION.md)
-and [remaining provider gates](PROVIDER_GATES.md).
+Current limits and future provider work are in [PROVIDER_GATES.md](PROVIDER_GATES.md).

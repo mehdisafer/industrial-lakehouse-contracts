@@ -11,7 +11,9 @@
 | Later accepted generation exists | Previous base no longer current | Old attempt cannot move the pointer backwards |
 | Artifact changed/missing | Digest/inventory disagrees with receipt | Consumer/refresher fails closed; no automatic deletion or repair |
 
-The executable reference qualification ends a separate Python process with `os._exit(73)` after target commit. It observes unchanged watermarks and the old reporting pointer, stops the source HTTP server, and recovers using the exact same logical key. It also tests an exit after state acceptance. These are real process/filesystem/SQLite tests, not a Windows/SCM/Spark qualification.
+The executable reference qualification ends a separate Python process with `os._exit(73)` after target commit. It observes unchanged watermarks and the old reporting pointer, stops the source HTTP server, and recovers using the exact same logical key. It also tests an exit after state acceptance. Those reference tests are distinct from the separately reviewed native run. The
+[native evidence](evidence/NATIVE_fc1a928_REVIEW.md) records the actual
+PostgreSQL/Spark/Delta recovery scenario and its post-materialisation crash boundary.
 
 A key is bound to code and dependency versions. After a code upgrade, do not blindly resume an old ambiguous run: use the previous pinned release to reconcile it, or perform an explicitly reviewed migration. The implementation rejects changed requests rather than silently reinterpret them.
 
@@ -28,11 +30,12 @@ Reference SQLite same-path backup/restore is implemented and tested, including r
 For a Delta target, successful staging writes are not sufficient. Before state
 acceptance, the engine must reread version 0 from its final location and reconcile
 its actual rows with the bounded reference projection. The proof is bound to the
-target manifest and checked by reporting and replay. Its unit tests do not prove
-that this works under Spark until the native harness is executed.
+target manifest and checked by reporting and replay. The actual native harness exercised this final-path readback at `fc1a928`;
+injected unit tests remain a separate layer of evidence.
 
 Catalog intent is persisted before any write and backed up with reference state.
 A lost response with an exact remote readback is recoverable. A missing or
 conflicting object after a recorded intent must be escalated; a new attempt is not
-permission to create another effect. The contract suite demonstrates this with
-MockTransport and an explicitly named HTTP protocol emulator, not a real server.
+permission to create another effect. The contract suite exercises this with MockTransport and a named protocol
+emulator. The separate [real catalogue qualification](OPENMETADATA_LIVE.md)
+exercised server readback and response-loss recovery on OpenMetadata 1.12.0.

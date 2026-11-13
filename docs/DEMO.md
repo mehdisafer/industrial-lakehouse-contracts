@@ -1,57 +1,77 @@
-# Demonstration walkthrough
+# Run and inspect the demonstration
 
-## Business question
+## Scenario
 
-For a fictional three-site manufacturer, which accepted order-fulfillment
-snapshot can a reporting consumer trust after a rejected batch or an interrupted
-publication? This project makes that decision explicit rather than equating a
-successful extraction with publishable data.
+A reporting consumer needs the last trustworthy sales-fulfillment snapshot even
+when a source delivers invalid data or a process stops between materialisation
+and publication. This demonstration shows that distinction through actual data,
+state transitions and reporting responses.
 
-## A short repository tour
+## Run the reference flow
 
-1. Read `contracts/sales.json` and `profiles/reference.json`: entities, fields,
-   owners, sites, incremental boundaries and resource budgets are explicit.
-2. Follow the reference command in the root README. It starts only disposable
-   loopback services, captures five synthetic entities and writes evidence.
-3. Inspect the generated reporting HTML and JSON: generation, batch, freshness,
-   contract and target manifest are visible alongside exact monetary totals.
-4. Inspect the recovery/governance demonstration. Its catalogue peer is an
-   emulator; compare it with the separate real-product G3a evidence, not with
-   an invented vendor screenshot.
+Clone the repository, activate a Python 3.12/3.13 virtual environment and install
+the project as described in the [README](../README.md#quick-start). From the root:
 
-## Reviewed checkpoints
+```bash
+python scripts/check_repository.py
+python -m ilc.cli validate
+python scripts/qualify_reference.py --output .runtime/demo-001 --rows 10000
+```
 
-| Scenario | Observed consumer outcome |
+Use a new destination on each run. The script creates synthetic database/CSV
+fixtures, starts bounded loopback HTTP services, executes the scenarios and stops
+the services when it exits. No managed cloud account is required.
+
+## Inspect the outputs
+
+In `.runtime/demo-001/evidence/`, inspect:
+
+| Output | What to examine |
 |---|---|
-| Nominal 10,000-record input | 995 orders and 3,980 facts; ordered amount 8,857,766.18 EUR |
-| Duplicate key / invalid amount / schema drift | Candidate rejected, no promotion or watermark advance |
-| Process exit after native target materialization | Candidate retained; last accepted generation remains reportable |
-| Resume with source HTTP offline | Frozen Bronze/target reused; one generation-2 publication |
-| Intended SITE_A revision | Ordered amount 8,857,786.18 EUR; no extra facts or orders |
-| Scope violation | Expected application HTTP 401/403/404 responses |
-| Catalogue replay | No additional mutation |
-| Lost catalogue response | Existing server object reconciled rather than recreated |
+| `qualification.json` | Scenario results, source identity and measured scope |
+| `report-initial.html` | First accepted generation and reconciled totals |
+| `report-degraded.html` | Rejected latest attempt; previous accepted dataset retained |
+| `report-recovered.html` | Recovered generation and its batch/contract/target lineage |
 
-The fixed fixture time is deliberate: `STALE` distinguishes old data from failed
-processing. `DEGRADED` identifies a rejected latest attempt while retaining the
-last accepted data. Neither flag is silently hidden for presentation.
+The HTML files are static exports of authorised reporting API responses. Open them
+as files; no public server or credentials are needed. Read the accompanying JSON
+receipts for the underlying evidence rather than treating a screenshot as a test.
+The `work/` directory contains runtime/source state and is not a publication bundle.
 
-## Inspect the real catalogue proof
+The fixed fixture time can produce `STALE`. That indicates old data, not failed
+processing. `DEGRADED` indicates a rejected latest attempt, not loss of the previous
+accepted dataset. [DATA_MODEL.md](DATA_MODEL.md) defines the measures and grains.
 
-The [G3a review](evidence/OPENMETADATA_cd09de0_REVIEW.md) records two actual
-OpenMetadata generations with 15 tables and 11 lineage edges each. Bronze is
-catalogued as raw serialized strings; Silver and Gold preserve their declared
-semantic types. Owners, synthetic classification, exact parent-table suites and
-external reconciliation results are read back through the API.
+## Expected business behaviour
 
-The HTML readback is a static API-derived list, not the OpenMetadata UI. There
-is no public service endpoint or hosted Power BI report in this preview.
+| Event | Consumer outcome |
+|---|---|
+| Clean 10,000-record input | 995 orders, 3,980 facts; ordered amount 8,857,766.18 EUR |
+| Duplicate key, invalid amount or schema drift | Candidate rejected; no publication or watermark advance |
+| Interrupted target publication | Last accepted generation remains reportable |
+| Resume with the HTTP source stopped | Frozen input and target reconciled; one replacement generation |
+| Intended SITE_A revision | Ordered amount 8,857,786.18 EUR; order/fact counts unchanged |
+| Request outside permitted site scope | Request denied before unauthorised totals can be exposed |
 
-## Reproducibility and scope
+These figures describe the deterministic fixture, not a performance benchmark or
+customer outcome. The [reviewed native run](evidence/NATIVE_fc1a928_REVIEW.md)
+exercised its engine-specific path separately.
 
-Run from the repository root in a new environment. Do not reuse prior output
-paths, production databases or client credentials. Full setup, runtime evidence,
-retention limits and error handling are in [RUNBOOK.md](RUNBOOK.md).
-The [native evidence review](evidence/NATIVE_fc1a928_REVIEW.md) and catalogue
-review identify separate commits and profiles. Correctness on bounded synthetic
-fixtures is not a distributed throughput benchmark or business ROI claim.
+## Explore recovery and governance
+
+```bash
+python scripts/qualify_recovery_governance.py --output .runtime/recovery-001 --rows 10000
+```
+
+This additional reference flow exercises same-path SQLite restoration and a
+catalogue **protocol emulator**. For the real OpenMetadata API integration, use the
+[separate catalogue guide](OPENMETADATA_LIVE.md) and its
+[reviewed evidence](evidence/OPENMETADATA_cd09de0_REVIEW.md). The static catalogue
+readback is API-derived, not a screenshot of the product UI.
+
+## Extend the model
+
+Start with [contracts](CONTRACTS.md) and the [architecture decisions](ARCHITECTURE.md).
+Entity ingestion is metadata-driven; a new business metric still requires reviewed
+code, reconciliation and tests. Use the [contribution guide](../CONTRIBUTING.md)
+for the required change evidence.
