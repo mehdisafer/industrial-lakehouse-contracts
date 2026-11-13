@@ -24,6 +24,7 @@ why it is designed this way, and what has actually been demonstrated.
 | [Governance](GOVERNANCE.md) | Metadata-only export, durable outbox and readback |
 | [OpenMetadata integration](OPENMETADATA_LIVE.md) | Real-product deployment, roles and six qualification scenarios |
 | [Continuous integration](CI_CIRCLECI.md) | Test routes, repository checks and resource bounds |
+| [Repository and CI validation](REPOSITORY_QUALITY.md) | Parser boundaries, negative regressions and original-evidence reconciliation |
 | [Contribution guide](../CONTRIBUTING.md) | Change scope, reproduction and review requirements |
 
 ## Review evidence and scope

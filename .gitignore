@@ -11,10 +11,15 @@ htmlcov/
 # Generated runtime, reports and build output
 .runtime/
 artifacts/
+test-results/
 build/
 dist/
 *.log
 *.sqlite*
+*.db
+*.db-wal
+*.db-shm
+*.db-journal
 
 # Local credentials; a names-only example may be committed
 .env
@@ -25,6 +30,9 @@ dist/
 *.key
 *.p12
 *.pfx
+id_rsa
+id_ed25519
+id_ecdsa
 
 # Editor and OS files
 .DS_Store

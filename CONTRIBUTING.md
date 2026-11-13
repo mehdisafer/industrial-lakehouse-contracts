@@ -39,6 +39,12 @@ accidentally tracked runtime/sensitive paths. It is not a general Markdown parse
 a runtime qualification or a secret detector. The separate CI disclosure gate
 scans reachable Git history.
 
+The [validation guide](docs/REPOSITORY_QUALITY.md) documents the supported syntax,
+byte limits, diagnostic redaction and original-JUnit evidence gate. Add a negative
+regression before changing a checker: an example that demonstrates the original
+failure is more useful than increasing a test total without checking behaviour.
+Do not force-add generated `test-results/`, SQLite databases or private-key files.
+
 ## Documentation and qualification changes
 
 Update the whole affected path: README, design/model, operating guide, qualification
@@ -55,7 +61,8 @@ python scripts/check_repository.py
 ```
 
 Do not edit the generated status page independently. Planned/unexecuted entries
-must not contain an executed revision.
+must not contain an executed revision. The evidence must contain the complete hash,
+not that hash embedded in a longer value.
 
 ## Pull-request evidence
 
@@ -69,7 +76,10 @@ and a performance benchmark. Avoid adding their counts or transferring evidence
 between profiles. Do not introduce automatic destructive cleanup, a paid resource,
 a public listener or a new licence grant as a side effect.
 
-The automatic CircleCI reference route includes repository and history checks.
+The automatic CircleCI reference route includes repository and history checks,
+a collected test inventory, and final reconciliation of the original JUnit and
+scenario outputs. An omitted test or unexpected skip is a failure, not a smaller
+successful suite. Preserve raw artifacts rather than browser-rendered copies.
 Heavy integration routes are explicit, not triggered for every documentation
 change. I merge after reviewing the exact candidate and its available checks;
 self-review is not an independent approval.
