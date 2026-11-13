@@ -1,116 +1,98 @@
-# OpenMetadata export: implementation and qualification boundary
+# OpenMetadata publication and durable delivery
 
-## Supported contract, not a claim of deployment
+## Qualified API contract
 
-The adapter targets **OpenMetadata 1.12.0**, pinned to upstream commit
-`caa14bfd42af6ec84464aa81815addd3e0cd2902`. It is built from the published request
-schemas and Java resource definitions at that revision, not from a floating SDK
-or a guessed endpoint. No OpenMetadata product was installed in the authoring
-container. The test peer is explicitly `tests/support/openmetadata_emulator.py`.
-A successful exchange with that peer is **protocol/control-flow evidence only**.
+The publisher targets OpenMetadata **1.12.0**, upstream commit
+`caa14bfd42af6ec84464aa81815addd3e0cd2902`. Request schemas and Java resource
+contracts, rather than a floating SDK or guessed endpoint, define the adapter.
+Unit tests and a named protocol emulator remain offline evidence. The separate
+actual-product run at `cd09de0` is now accepted after supplied-artifact review;
+see [G3a evidence](evidence/OPENMETADATA_cd09de0_REVIEW.md).
 
-The pinned source matters: results use `POST /api/v1/dataQuality/testCases/testCaseResults/{fqn}`,
-with `GET` on the same route and `startTs/endTs` in milliseconds. The older
-`PUT .../{fqn}/testCaseResult` shape is not used. Test-definition readback requests
-`fields=testDefinition`. The 1.12 repository creates a basic test suite when
-preparing a new table-linked test case; this adapter does not add an unsupported
-`testSuite` field to `CreateTestCase`. Any implicit suite creation is an additional
-server-side effect and must be reviewed on the actual sandbox.
+Results use `POST /api/v1/dataQuality/testCases/testCaseResults/{fqn}` and GET on
+the same route with millisecond `startTs/endTs`. Test-case readback requests
+`fields=testDefinition`. The server implicitly creates a basic suite for a
+new table-linked case; no unsupported `testSuite` request property is invented.
+The live readback verifies `basic=true` and the exact parent-table UUID/type.
 
-## Destination prerequisites and scope
+## Destination and permissions
 
-Use only a dedicated local synthetic instance. The configured URL is restricted
-to loopback `/api`; redirects and credential-bearing URLs are refused. Before
-writing, the adapter checks the exact version, the `ilc_` database service, all
-mapped owner teams and the `ILCSynthetic.PUBLIC_SYNTHETIC` classification tag.
-Those prerequisites must already exist. No admin user, team, classification or
-service is automatically created by this tool.
+The publisher admits only explicit loopback `/api` settings, the exact version,
+a dedicated `ilc_` database service, mapped owner teams and the synthetic tag.
+Redirects, credential-bearing URLs and oversized responses are refused.
+The publisher itself does not create admin identities, services, teams or tags.
 
-A service token with the necessary metadata CRUD/view/test permissions is required
-for a real test. It is supplied through `ILC_OPENMETADATA_TOKEN`, never inside the
-contract, export plan or durable delivery journal. Synthetic names are not access
-control; actual token permissions and negative server RBAC tests remain a gate.
+Its separate disposable CI harness bootstraps prerequisites using an admin fixture,
+then publishes with a non-admin writer and rereads with a distinct reader. Actual
+server logs show the expected unauthenticated 401 and mutation/administration 403
+responses. This is resource-type RBAC in a dedicated instance, not multi-tenant
+namespace isolation. Supply credentials outside plans, journals and Git.
 
-## What is exported
+## Export contents
 
-Only an accepted generation whose target and receipt have been reread can produce
-an export plan. A generation change during plan construction is rejected rather
-than combining two snapshots. For the five-entity base contract the plan contains:
+Only a reread accepted generation can create an export plan. Generation drift
+while building it is rejected. For the five-entity contract, each plan contains
+fifteen tables: five raw-string Bronze, five typed Silver and five Gold; owner
+team references; synthetic classification; eleven table-level lineage edges; and
+one external reconciliation result bound to acceptance time/digest.
 
-- 15 explicit tables: five raw Bronze, five typed Silver and five Gold.
-- Owner team references, explicit synthetic classification and contractual column types.
-- 11 table-level lineage edges. The contract-generated site dimension does not acquire a fabricated source table.
-- One external reconciliation test definition/case and a result tied to the acceptance timestamp/digest.
+The contract-generated site dimension has no fabricated upstream table. No source
+records, samples, rejected rows, credentials, private host paths or dashboard
+assets are exported. The source profile is retained. Accepted aggregate DQ is
+published, not a complete rejected-run incident feed.
 
-Bronze columns are serialized strings; they are not falsely described as already
-having Silver types. No record samples, rejected rows, credentials, private host
-paths or invented dashboard asset are exported. The reference-vs-native source
-profile is retained. Only accepted aggregate reconciliation is published currently;
-rejected-run diagnostics are still local and are not a complete DQ incident feed.
+Each generation receives an immutable catalogue database name. This preserves
+provenance at the expense of metadata growth. Automatic retention/deletion is
+not implemented or implied by the demonstration.
 
-Each accepted generation gets an immutable `ilc_` catalog database name. This
-trades simplicity and provenance for metadata growth. No automatic retention or
-deletion is included. This is a bounded demonstration, not a catalog lifecycle
-solution for production.
+## Durable intent, replay and conflicts
 
-## Durable delivery and unknown effects
+The outbox stores an immutable plan and REQUESTED/VERIFIED states. Intent is
+persisted before mutation; every entity, edge and DQ result must subsequently be
+read back and matched. A later invocation reconciles remote state first.
 
-The local outbox holds an immutable plan plus `REQUESTED`/`VERIFIED` operation
-states. Intent is persisted **before** a metadata mutation. A response alone is
-not enough: every created entity, edge and quality result must be read back and
-matched. A subsequent invocation first reconciles the remote state.
+A lost response with an exact existing object is reused; unresolved absence or
+inconsistency after a requested effect stops instead of blindly repeating it.
+Foreign objects are not overwritten. No automatic DELETE or repair is performed.
+A local writer lock does not provide cross-host fencing.
 
-If a write response was lost but the exact object exists, it is reused. If the
-object is absent or inconsistent after an attempted write, the operation stops
-with an unknown outcome or conflict; it does not blindly resend. A pre-existing
-foreign object or later drift is not overwritten. No automatic retry, DELETE or
-repair is performed. One local writer is enforced for the outbox. This does not
-provide distributed fencing against other hosts writing the same catalog; use a
-single authorized namespace writer.
+In the reviewed actual run, replay has zero mutations, conflict handling has five
+reads and zero mutations, and generation-2 recovery has exactly one database PUT
+whose successful response was deliberately suppressed in the client transport.
+This is a controlled client fault, not a physical network outage. The shared test
+definition is reused, explaining 33 initial mutations versus 32 in generation 2.
 
 ## Commands
 
 ```bash
-# Generate a metadata-only plan. This does not contact the catalog.
+# Build a metadata-only plan without contacting the catalogue.
 python scripts/governance.py --root .runtime/pipeline \
   --settings governance/openmetadata.example.json --output artifacts/catalog-plan.json
 
-# On an explicitly authorized real local instance only:
-# set ILC_OPENMETADATA_TOKEN outside Git and review the destination first.
+# On an explicitly authorized real loopback instance only;
+# supply ILC_OPENMETADATA_TOKEN outside Git first.
 python scripts/governance.py --root .runtime/pipeline \
   --settings governance/openmetadata.example.json \
   --publish --allow-catalog-writes --output artifacts/catalog-receipt.json
 ```
 
-The example CLI defaults to the **reference** journal. An explicit `--profile`
-can select a native journal, subject to its separate demo opt-in, dependencies and
-database restrictions. That pathway is not executed or qualified in this delivery. `REMOTE_METADATA_READ_BACK` names a readback
-observation, not a deployment verdict. Preserve the peer identity/environment in
-any external qualification report.
+The CLI defaults to the reference journal. An explicit native profile is subject
+to separate dependencies, database restrictions and opt-in; that combined pathway
+has not been executed in the reviewed G3a run.
 
-## Real-server execution and review boundary
+## Evidence boundaries
 
-The separately scoped CircleCI catalogue job now reports **success** on
-`cd09de03d658cb66d5aaa29a8ec677fd17a3f977`, alongside reference success. Its
-mandatory live harness provisions the actual product, authenticates distinct
-roles, publishes and rereads two generations, exercises permission denials,
-replay, client-injected response loss and conflict preservation. The source
-profile is a new accepted reference generation; no Spark job is rerun.
+The live catalogue used newly accepted reference_sqlite generations, not a repeated
+native Spark qualification. `REMOTE_METADATA_READ_BACK` is an operation receipt;
+actual deployment/RBAC/recovery evidence comes from the separate live harness and
+its reviewed server traces. An earlier data receipt's `catalog_provider=NOT_RUN`
+is not rewritten after the subsequent metadata operation.
 
-Final product acceptance still requires inspection of the private version/image,
-role, entity/column, lineage, DQ, basic-suite, HTTP-trace and artifact-hash evidence.
-A successful status is not a claim that those individual files were downloaded
-and reviewed. Unit/MockTransport/emulator tests remain separate offline evidence.
-Catalogue retention, SDK/Airflow connectors, TLS/SSO, high availability and actual
-UI inspection are outside this bounded API-publisher qualification.
+Fifteen artifact hashes, thirty table UUIDs, 170 columns, twenty-two edges, two DQ
+results and two basic suites reconcile. Original XML bytes and billed credits
+remain unverified. The HTML is an API-derived snapshot, not an OpenMetadata UI
+screenshot. TLS/SSO, HA, catalogue restore/retention, SDK/Airflow connectors and
+multi-tenant security remain outside scope.
 
-## Real product qualification route
-
-The bounded, separate CircleCI deployment and live permission/replay/conflict
-scenarios and current successful-job checkpoint are described in
-[OPENMETADATA_LIVE.md](OPENMETADATA_LIVE.md).
-The input is a newly accepted reference-profile generation, not a repeated native
-Spark qualification. Existing emulator tests remain emulator evidence. The live
-route uses actual OpenMetadata 1.12.0 HTTP APIs, and its precise executed outcome
-is recorded in issue #4 only after observation. No default admin token is used
-for publication and no secrets are exported.
+See [live deployment](OPENMETADATA_LIVE.md), [qualification](QUALIFICATION.md)
+and [remaining provider gates](PROVIDER_GATES.md).

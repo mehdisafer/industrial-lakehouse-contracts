@@ -1,77 +1,127 @@
-# P01 — CircleCI qualification
+# CircleCI execution, evidence and disclosure controls
 
-GitHub holds code and review; CircleCI provides isolated execution while GitHub Actions admission is blocked by its billing/spending notice. No account plan, payment setting, repository visibility or provider tenant is changed.
+GitHub stores source/review; CircleCI is the active automatic execution route.
+The optional GitHub Actions reference and native workflows are manual-only.
+This avoids a duplicate automatic OS/Python matrix; it does not modify account
+billing or claim that the historical runner-admission problem has been fixed.
 
-## Evidence checkpoints
+## Reviewed functional checkpoints
 
-**Native G2:** both jobs succeeded at `fc1a9286c937deb09b87b97524c6835b24a1d516`. Supplied native logs/receipts were reviewed: one native pytest, six separate scenarios, fourteen matching canonical JSON hashes, twenty source-file fingerprints, final-location Delta receipts and recovered reporting. Functional G2 is accepted within its bounded single-host scope. Original raw JUnit hash and actual credits remain reservations. See [the complete review](evidence/NATIVE_fc1a928_REVIEW.md).
+| Route | Executed commit | Reviewed decision |
+|---|---|---|
+| Native | `fc1a9286c937deb09b87b97524c6835b24a1d516` | Bounded G2 accepted; one native pytest and six script scenarios |
+| Real catalogue | `cd09de03d658cb66d5aaa29a8ec677fd17a3f977` | Bounded G3a accepted; 33 offline safeguard tests and six live scenarios |
 
-**Catalogue G3a:** both `reference` and `catalogue` report success at `cd09de03d658cb66d5aaa29a8ec677fd17a3f977`. The catalogue command provisions and exercises the real OpenMetadata product, not the protocol emulator. Its actual private image/role/readback/trace artifacts have not yet been independently inspected, so final G3a acceptance remains open. See [deployment, checks and artifact paths](OPENMETADATA_LIVE.md).
+The [native](evidence/NATIVE_fc1a928_REVIEW.md) and
+[catalogue](evidence/OPENMETADATA_cd09de0_REVIEW.md) reviews retain their actual
+source profiles, hashes, warnings and archival/accounting reservations.
+The catalogue input is reference_sqlite, not a combined native/catalogue rerun.
 
-Reference success is a separate observation. Exact hosted test counts are not inferred from collection counts or historical local tests. Documentation-only updates use `[skip ci]`; no rerun is needed to inspect existing evidence.
+## Reference route
 
-## Execution routes
+`reference-qualification` uses Linux `cimg/python:3.13`, resource class medium,
+`.[test]`, Python compilation, contract validation and the repository's Smarter
+Testing suite. Its two separate reference scripts exercise 10,000 synthetic
+records and recovery/governance emulation. No native backend is substituted for
+an emulator or inferred from reference success.
 
-Default `reference-qualification` uses one Linux/Python 3.13 Docker job, `.[test]`, compilation, contract validation, the existing Smarter Testing suite and both 10,000-record reference scripts. `run_testsuite_doctor` is false by default because doctor repeats tests. Its execution remains unobserved. There is no configured lint tool or full transitive lockfile; neither is fabricated.
+`run_testsuite_doctor` defaults to false because doctor repeats tests; no observed
+doctor result is claimed. There is no configured lint tool or complete transitive
+lockfile, and neither is invented for presentation. Hosted test counts require
+the job's own JUnit; older local counts are not transferred to it.
 
-Native uses one Docker `large` job, parallelism 1, `cimg/python:3.12` and disposable `postgres:16`. A bounded bootstrap retrieves official Temurin 17 GA metadata/archive, checks declared size/SHA-256, restricts HTTPS redirects and safely extracts into a fresh runtime directory. It records the resolved JDK and verifies its major version. No OS packages or persistent Java setting are changed. Mutable image tags/latest-GA selection are not immutable locks; signature verification is not claimed.
+## Reachable-history disclosure gate
 
-The reviewed native runtime reports Python 3.12.16, Temurin 17.0.21+9, PostgreSQL `160015`, Psycopg 3.2.13, PySpark/Delta Spark 4.0.1 and Dagster 1.11.16. Resolved dependencies are recorded separately from direct pins.
+The reference job additionally runs `scripts/publication_gate.py` under a ten-minute
+watchdog. Gitleaks 8.30.1 is downloaded from its official release with fixed archive
+size and SHA-256, and its version is checked. A generated synthetic token-shaped
+positive control must be detected before the actual history scan can succeed.
 
-Catalogue uses one Linux VM `large` job, an isolated Docker Compose stack (OpenMetadata 1.12.0, PostgreSQL 16, Elasticsearch 9.3.0) and a Python 3.12 test container. Its input is a **fresh accepted reference_sqlite generation**, not a rerun of Spark or a combined native/catalogue attestation. Separate generated credentials, a non-admin writer and a read-only consumer exercise server-side authorization. Images are resolved during the job and recorded by digest; those private values await review.
+The script checks the exact repository, commit and clean tracked worktree, fetches
+all remote heads/tags and refuses shallow history. It exports unique reachable
+blob bytes and commit/tag metadata under object/byte budgets, validating each Git
+object identity. It scans the export directory, including bounded archive/encoding
+inspection, rather than trusting an unchecked git-log pipeline.
 
-| Trigger | Route |
-|---|---|
-| Ordinary feature push | Reference only |
-| `qualify/p01-native-20261112` or `run_native: true` | Native, unless catalogue is explicitly selected |
-| `qualify/p01-openmetadata-20261113` or `run_catalogue: true` | Catalogue, unless native is explicitly selected |
-| `circleci-project-setup` synchronization | No ordinary build; synchronization commits also use `[skip ci]` |
+Scanner errors, missing output, exit/result disagreement and any finding fail the
+job. Only redacted rule/location/fingerprint summaries are published. The code
+never changes visibility, permissions, history or billing. `artifacts/publication`
+contains its inventory and summary. A successful configured gate is distinct from
+an independent download/review of that inventory.
 
-Do not enable both heavy parameters. The existing reference and native job bodies were preserved; catalogue has its own workflow. There is no matrix, automatic retry, remote-Docker service, paid cache or vendor deployment. Main is not merged to enable these routes.
+The first integrated gate/reference job succeeded at `235bd381e9ef5cc906e77ea63bcca9c64700d2e2`.
+The exact final documentation candidate must also have its reference result checked
+before merge. Rule-based absence of findings is not a guarantee against every
+confidential item, vulnerability or licensing problem; issues/logs need separate
+review. See [PUBLICATION.md](PUBLICATION.md).
 
-## Resource and credit bounds
+## Native route
 
-Native uses a Docker large executor (4 vCPU / 8 GB). Its main command has a 35-minute timeout plus a 30-second kill grace. Stage limits cover Java bootstrap, installation, readiness, pytest and scenarios; the outer watchdog takes precedence. The reviewed command took 272 seconds and its job UI showed 4m39s. Actual native credits are unreported.
+Native uses one Docker large job, `cimg/python:3.12`, disposable PostgreSQL 16 and
+explicit verified Temurin 17 bootstrap. The bootstrap checks official HTTPS hosts,
+archive size/SHA-256, safe extraction and Java major version. It records the
+resolved release, not an immutable future JDK selection or signature verification.
 
-Catalogue uses a Linux VM large executor (4 vCPU / 15 GB). Its main command is bounded to 25 minutes plus kill grace, with shorter pull, migration, readiness and live-qualification timeouts. It stops only its job-owned services, retains no shared deployment and records cleanup outcomes. No DROP, TRUNCATE, prune or shared-volume deletion is used.
+The reviewed runtime was Python 3.12.16, Temurin 17.0.21+9, PostgreSQL 160015,
+Psycopg 3.2.13, PySpark/Delta Spark 4.0.1 and Dagster 1.11.16. The job runs native
+pytest, the six-scenario harness and a mandatory exact-SHA/semantic evidence gate.
+It rejects skipped tests, dirty/wrong source identity, missing scenarios and
+inconsistent final-path Delta proofs. All ten version-0 tables, source-target
+reconciliation and recovered reporting generation 2 are required.
 
-These watchdogs bound commands, not account bills. VM/image provisioning, checkout and artifact upload are outside them. Actual catalogue credits and cleanup results have not yet been read. No bill is inferred from success or status timestamps. The increment triggered **two catalogue attempts** (one failed, one succeeded), two reference jobs and **no additional native/Spark job**. Setup synchronization and final documentation updates do not duplicate those runs. No paid refill or allowance change was made.
+Only `qualify/p01-native-20261112` or explicit `run_native: true` selects this route.
+No native matrix, automatic retry, remote Docker or paid layer cache is enabled.
 
-## Native commands and evidence gate
+## Catalogue route
 
-`scripts/run_circleci_native.sh` checks CircleCI, repository origin, exact checkout, synthetic opt-ins and loopback `ilc_demo` targets. It installs dependencies, runs `pip check`, captures versions and executes the native-marked pytest, `qualify_native.py --rows 10000` and `verify_native_ci.py`.
+Catalogue uses one disposable Ubuntu 24.04 machine large job, Compose, actual
+OpenMetadata 1.12.0, PostgreSQL metadata storage and Elasticsearch 9.3.0. Credentials
+and signing keys are generated per job outside artifact directories. Only the API
+is host-published, on loopback. Two non-admin identities separate publication and
+readback; the admin fixture is limited to bootstrap/sentinel preparation.
 
-The native verifier rejects skipped/error tests, wrong/dirty source identity, source drift, incomplete scenarios, absent PostgreSQL/Dagster evidence and mismatched readback proof bindings. It requires six application cases, 10,000 clean-batch captured records, 3,980 facts, exact count/key/Decimal reconciliation, ten final-path Delta table receipts and recovered generation 2. Logs, JUnit, environment and acceptance/readback proofs are artifacts. Runtime policies and source databases are not exported.
+Only `qualify/p01-openmetadata-20261113` or explicit `run_catalogue: true` selects
+this route. Never enable native and catalogue parameters together. Setup branch
+synchronizations run neither heavy route. Full setup and evidence paths are in
+[OPENMETADATA_LIVE.md](OPENMETADATA_LIVE.md).
 
-Its unit tests use synthetic receipts, not native execution. The cloud test and harness supply the executed evidence; review reconciles supplied artifacts, not an independent re-execution or signed attestation.
+## Timeouts, credits and cleanup
 
-## Catalogue commands and evidence gate
+Native command watchdog: 35 minutes plus kill grace; Java/install/readiness/test/
+scenario stages have shorter limits. Catalogue command watchdog: 25 minutes with
+bounded pulls, migration, readiness and qualification. Reference disclosure scan:
+10 minutes. Provisioning, checkout and artifact upload are outside these commands;
+none is an account-wide spend cap.
 
-`scripts/run_circleci_openmetadata.sh` checks repository/commit identity and a fresh job namespace, provisions the disposable stack, waits for the actual API and executes the offline safeguard tests followed by `qualify_openmetadata.py`. The latter emits its success result only after six real-server scenarios: product identity, two generations of metadata/DQ readback, zero-write replay, response-loss reconciliation, permission refusals and preservation of an existing conflicting object.
+Reviewed command durations were 272 seconds native and 158 seconds catalogue.
+Actual billed credits are unknown and must not be inferred from timestamps.
+Historical qualification used two native attempts and two catalogue attempts,
+each with one correction; publication review does not rerun either stack.
+No subscription, refill, spending ceiling or resource-class increase is made.
 
-The response loss is deliberately injected by the client transport after the actual server write succeeds. It is not a physical network-outage claim. The HTML report is derived from API responses, not the OpenMetadata UI. `harness-junit.xml` counts offline guard tests; it must not be described as the six live scenarios. Final acceptance requires `qualification-openmetadata.json`, readbacks, traces, artifact hashes, image identities and the job attempt record. A green status is not a substitute for reading those artifacts.
+The catalogue exit handler stops only its job-owned Compose project and records
+service-stop/sysctl-restoration codes, both zero in the reviewed receipt. It does
+not DROP/TRUNCATE shared data, prune Docker or delete named volumes. The VM is
+disposable infrastructure, not a persistent hosted catalogue.
 
-## Scope, failures and prior evidence
+## Failure history and limitations
 
-Spark runs `local[2]`; Dagster runs in process. Native reporting consumes JSON projections reconciled against Delta, not Direct Lake. Its fault follows synchronous Spark stop/target relocation and PostgreSQL stays available. Distributed scale, HA, native database permissions, PostgreSQL restore and Fabric/Power BI remain separate gates. Catalogue adds dedicated-server resource-type roles, not TLS, SSO, multi-tenant isolation or SDK/Airflow connector qualification.
+The first native attempt failed; source review identified Java 11 in the browsers
+image and the explicit Java 17 correction subsequently succeeded. The first
+catalogue attempt also failed; a reproduced gzip double-decoding defect and a
+deprecated suite-field assumption were corrected before success. Neither later
+success establishes the precise unread first failed step.
 
-The first native job `9395f4f` failed. A source-established Java 11 image defect was corrected at `fc1a928`, which succeeded; the precise first failed step remains unread. Historical V3 reference 193-pass/one-skip evidence and local verifier/bootstrap tests remain distinct, not additive cloud counts.
+Native remains Spark local[2] and in-process Dagster; JSON reports are reconciled
+to Delta, not Direct Lake. Catalogue remains a dedicated-instance API-publisher
+qualification, not TLS/SSO, multitenancy, HA, Airflow ingestion or product-UI review.
+Fabric/Power BI remains separate. Source-visible publication is not deployment.
 
-The first catalogue job `a99c173` failed; its reference job succeeded. Review reproduced a gzip double-decoding error in the new tracing transport and identified the deprecated `executable` suite check. `cd09de0` decodes once under a byte budget and binds the actual `basic` suite to the exact table UUID/type. Seven regression cases cover these corrections. The corrective catalogue and reference jobs succeeded; this does not prove the exact cause in the unread first job log.
+## Primary references
 
-Final targeted local tests: **65 passed**, comprising 33 new harness cases and 32 publisher cases. An earlier local run had 219 passed and one native skip on the recovered V3 materialization plus the initial new tests; it excluded 41 earlier GitHub-only CI tests. These sets overlap and do not represent a full current hosted test count. Compilation, shell syntax and YAML structural checks passed; local Docker startup, CircleCI CLI validation and doctor were not executed.
-
-## Reference documentation
-
-Mutable offerings should be rechecked before changing resources or billing.
-
-- https://circleci.com/docs/guides/execute/using-docker/
-- https://circleci.com/docs/guides/execution-managed/using-linuxvm/
-- https://circleci.com/pricing/price-list/
-- https://circleci.com/pricing/
-- https://circleci.com/developer/images/image/cimg/python
 - https://circleci.com/docs/reference/configuration-reference/
-- https://docs.delta.io/releases/
-- https://github.com/CircleCI-Public/cimg-python/blob/main/3.12/browsers/Dockerfile
+- https://circleci.com/docs/guides/execution-managed/using-linuxvm/
+- https://github.com/gitleaks/gitleaks/releases/tag/v8.30.1
+- https://github.com/gitleaks/gitleaks/blob/v8.30.1/README.md
 - https://adoptium.net/installation/archives/
-- https://adoptium.net/installation/ci-scripts
+- https://docs.delta.io/releases/
