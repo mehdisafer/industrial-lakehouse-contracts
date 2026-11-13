@@ -1,6 +1,7 @@
 """Check licence packaging and current notices; not a third-party legal audit."""
-from importlib.metadata import distribution
+from importlib.metadata import distributions
 from pathlib import Path
+import sysconfig
 import tomllib
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -26,7 +27,16 @@ def test_package_declares_mit_and_a_supported_build_backend():
 
 
 def test_installed_editable_distribution_includes_license():
-    installed = distribution("industrial-lakehouse-contracts")
+    # pytest adds src to sys.path; source-tree egg-info is not the installed wheel.
+    # Inspect the active environment's installation paths explicitly instead.
+    paths = sorted({sysconfig.get_path("purelib"), sysconfig.get_path("platlib")})
+    matches = [
+        item for item in distributions(path=paths)
+        if item.metadata.get("Name", "").replace("_", "-").casefold()
+        == "industrial-lakehouse-contracts"
+    ]
+    assert len(matches) == 1, "Expected one project distribution in the active environment"
+    installed = matches[0]
     assert installed.metadata.get("License-Expression") == "MIT"
     assert installed.metadata.get_all("License-File") == ["LICENSE"]
     embedded = installed.read_text("licenses/LICENSE")
