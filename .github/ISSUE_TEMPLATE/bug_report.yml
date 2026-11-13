@@ -1,0 +1,49 @@
+name: Bug report
+description: Report a reproducible defect in a specific execution profile.
+title: "[Bug] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use synthetic inputs and sanitised excerpts. Do not include credentials,
+        real records or confidential service details. Security concerns should
+        follow SECURITY.md rather than disclose sensitive material here.
+  - type: input
+    id: revision
+    attributes:
+      label: Source revision
+      description: Exact commit SHA, and any local modifications.
+    validations:
+      required: true
+  - type: dropdown
+    id: profile
+    attributes:
+      label: Affected execution profile
+      options:
+        - Reference
+        - Native PostgreSQL / Spark / Delta / Dagster
+        - OpenMetadata API integration
+        - Repository or documentation
+        - Fabric read-only preflight
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction and environment
+      description: Commands, Python/runtime versions and the smallest synthetic fixture.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+    validations:
+      required: true
+  - type: textarea
+    id: observed
+    attributes:
+      label: Observed behaviour and evidence
+      description: Exit status, sanitised log excerpt and impact on accepted data or reporting.
+    validations:
+      required: true

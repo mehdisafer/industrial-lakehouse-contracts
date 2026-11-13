@@ -9,13 +9,13 @@
 | Journal | Admission, attempts, capture, failure/rejection, publication and recovery events |
 | Evidence | Actual source vector, counts/bytes, exact sums, result/manifest hashes, versions, commit/dirty state and non-executed integrations |
 
-These are original versioned `ilc-*` schemas. ODCS conformance is explicitly not assessed. There is no agent policy or LLM execution in P01.
+These are original versioned `ilc-*` schemas. ODCS conformance is explicitly not assessed. Agent execution is outside this data-pipeline contract.
 
 ## Value rules
 
 Strings are bounded. Integer values reject booleans, floats, exponent notation and out-of-range integers. Monetary inputs use decimal literals, never binary floating point; their precision/scale is checked without silent rounding. Timestamps must include UTC (`Z` or `+00:00`), then normalize to six fractional digits.
 
-Rows must have exactly the contract's fields. Unknown or missing fields are quarantined. Duplicate primary keys quarantine every conflicting member, not whichever row happens to appear later. All implemented DQ rules are blocking in this increment; configurable warning-only rules are not yet implemented.
+Rows must have exactly the contract's fields. Unknown or missing fields are quarantined. Duplicate primary keys quarantine every conflicting member, not whichever row happens to appear later. All implemented DQ rules are blocking; configurable warning-only rules are not yet implemented.
 
 The reviewed model checks order/customer site consistency, known sites, line/product/order relationships, line amount = quantity × unit price, shipment/line relationships, and no overshipment. Source→Silver accounting and independent Silver→Gold keys/counts/Decimal totals are stored.
 
@@ -33,4 +33,4 @@ This is not transaction-log CDC. Source deletions, updates outside the overlap a
 
 ## Gold dimensions
 
-Customer, product and site dimensions are materialized per accepted generation, joined by their business keys to the order-line fact. These are versioned snapshot dimensions (SCD1 within a generation), not SCD2 history. The immutable dataset generations preserve prior snapshots. A surrogate-key/SCD2 migration is not silently implied.
+Customer, product and site dimensions are materialized per accepted generation, joined by their business keys to the order-line fact. These are accepted-generation snapshots, not SCD Type 2 history. The immutable dataset generations preserve prior snapshots. A surrogate-key/SCD2 migration is not silently implied.

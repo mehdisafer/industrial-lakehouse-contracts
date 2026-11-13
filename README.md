@@ -1,156 +1,116 @@
 # Industrial Lakehouse Contracts
 
-**A contract-driven data pipeline that publishes only reconciled, accepted reporting generations.**
+**Contract-driven ingestion, reconciled reporting and recoverable publication.**
 
-I built this portfolio project around a fictional manufacturer operating three
-sites. It demonstrates a concrete data-platform problem: ingest heterogeneous
-sources, reject bad input, reconcile monetary totals, and recover interrupted
-publication without exposing a partial dataset to reporting.
+I designed this project to address a recurring data-platform problem: a successful
+load does not necessarily produce a dataset that reporting consumers can trust.
+The implementation separates ingestion, validation and publication so that only
+an accepted, reconciled generation becomes visible to consumers.
 
-The implementation includes a lightweight reference path, a qualified native
-PostgreSQL / PySpark / Delta / Dagster path, and a separately qualified real
-OpenMetadata integration. All inputs and identifiers are synthetic.
+The use case is sales fulfillment across three industrial sites. Database tables,
+a paginated HTTP service and CSV files feed a Bronze/Silver/Gold model, with
+explicit contracts, blocking quality rules and exact monetary reconciliation.
+All demonstration data is synthetic.
 
-## Start here
+[Run the demonstration](docs/DEMO.md) · [Architecture](docs/ARCHITECTURE.md) ·
+[Data model](docs/DATA_MODEL.md) · [Qualification baselines](docs/STATUS.md)
 
-[Demonstration walkthrough](docs/DEMO.md) · [Architecture](docs/ARCHITECTURE.md) ·
-[Qualification evidence](docs/QUALIFICATION.md) · [Runbook](docs/RUNBOOK.md) ·
-[Remaining work](docs/PROVIDER_GATES.md)
+## Engineering focus
 
-| Capability | Evidence and scope |
-|---|---|
-| Database, paginated HTTP and CSV ingestion | Five contracted entities; bounded capture and immutable source inventory |
-| Data quality and exact reconciliation | Duplicate keys, invalid amounts and schema drift block publication; Decimal/count/key checks |
-| Native data processing | PostgreSQL 16, PySpark/Delta 4.0.1 and Dagster 1.11.16 executed on CircleCI; [G2 review](docs/evidence/NATIVE_fc1a928_REVIEW.md) |
-| Recovery and reporting | Controlled post-target process exit, source HTTP offline, Bronze/target reuse, generation 2 served |
-| Real catalogue integration | OpenMetadata 1.12.0; two generations, schemas/owners/tags/lineage/DQ, server-role denials and delivery recovery; [G3a review](docs/evidence/OPENMETADATA_cd09de0_REVIEW.md) |
-| Reference backup/restore | SQLite same-path restoration, not PostgreSQL/Delta disaster recovery |
-| Fabric / Power BI | Read-only inventory preflight only; implementation and tenant qualification remain open |
-| Scale and production | Single-host synthetic qualification, **not** a Big Data benchmark or production-readiness claim |
+- **Reliable publication.** The accepted dataset pointer and watermarks advance
+  together, after validation. A rejected or interrupted candidate is not a report.
+- **Recoverable processing.** Frozen inputs, immutable artifacts and durable
+  journals allow existing effects to be reconciled before retrying.
+- **Metadata-driven ingestion.** Contracts describe entities, keys, types,
+  ownership and classification; execution profiles select sources and engines.
+  Business transformations remain reviewed code.
+- **Governed consumption.** Reporting applies site scope before aggregation.
+  A separate metadata publisher verifies owners, classifications, lineage and
+  quality results through the OpenMetadata API.
 
-## How it works
+## Architecture
 
 ```mermaid
 flowchart LR
-    DB[Database] --> B[Immutable Bronze]
+    DB[Database] --> B[Bronze capture]
     HTTP[Paginated HTTP] --> B
     CSV[CSV files] --> B
-    C[Versioned contracts and profiles] --> S[Typed Silver and blocking checks]
+    C[Contracts and profiles] --> S[Typed Silver and quality checks]
     B --> S
-    S --> G[Gold dimensions and facts]
-    G --> V[Key / count / Decimal reconciliation]
-    V --> A[Transactional accepted pointer and watermarks]
+    S --> G[Gold model]
+    G --> Q[Count, key and Decimal reconciliation]
+    Q --> A[Accepted generation and watermarks]
     A --> R[Site-scoped reporting API]
     A --> O[Durable metadata outbox]
-    O --> M[OpenMetadata API publication and readback]
+    O --> M[OpenMetadata API]
 ```
 
-A candidate is not a published generation. The accepted pointer, watermarks and
-receipt are committed only after validation. Native execution rereads all ten
-Delta tables at their final path before acceptance. If publication is interrupted,
-the next invocation reconciles existing effects rather than blindly repeating them.
+The reference profile uses SQLite and immutable JSON. The native profile uses
+PostgreSQL, PySpark, Delta Lake and an in-process Dagster job. Native reporting
+consumes JSON projections reconciled against Delta. The catalogue integration
+was qualified separately with accepted reference-profile generations.
 
-The reference profile uses SQLite and immutable JSON datasets. The native profile
-uses PostgreSQL, Spark SQL, Delta and an in-process Dagster job. Reporting consumes
-JSON projections reconciled against Delta, not Direct Lake. Catalogue integration
-was tested with fresh accepted **reference** generations; the native and catalogue
-runs are separate, not a claimed combined execution.
+## Quick start
 
-## Run a reproducible demonstration
-
-Use Python 3.12 or 3.13, a new virtual environment and a fresh output directory.
-No cloud account or real business data is needed for the reference route.
+Requirements: Git and Python **3.12 or 3.13**. Run from the cloned repository root.
+The reference demonstration requires no database server or cloud account.
 
 ```bash
+git clone https://github.com/mehdisafer/industrial-lakehouse-contracts.git
+cd industrial-lakehouse-contracts
 python -m venv .venv
-# Linux/macOS: source .venv/bin/activate
-# PowerShell: .\.venv\Scripts\Activate.ps1
-python -m pip install -e '.[test]'
-python -m ilc.cli validate
-python -m pytest --junitxml=artifacts/junit.xml
-python scripts/qualify_reference.py --output .runtime/demo-001 --rows 10000
-python scripts/qualify_recovery_governance.py --output .runtime/recovery-001 --rows 10000
 ```
 
-The scripts refuse existing output directories. Read their `evidence/` receipts
-and generated report rather than treating file existence as success. Keep `work/`,
-source databases, bearer policies and runtime credentials out of Git. Native and
-catalogue prerequisites are documented in the [runbook](docs/RUNBOOK.md).
+Activate `.venv` with `source .venv/bin/activate` on Linux/macOS, or
+`.\.venv\Scripts\Activate.ps1` in PowerShell. Then:
 
-## What the reviewed demonstration produced
+```bash
+python -m pip install -e '.[test]'
+python scripts/check_repository.py
+python -m ilc.cli validate
+python -m pytest
+python scripts/qualify_reference.py --output .runtime/demo-001 --rows 10000
+```
 
-| Measure | Initial generation | Recovered/revised generation |
-|---|---:|---:|
-| Captured records across five entities | 10,000 | 10,000 |
-| Orders | 995 | 995 |
-| Fact rows | 3,980 | 3,980 |
-| Ordered amount, EUR | 8,857,766.18 | 8,857,786.18 |
-| Backlog amount, EUR | 3,387,718.88 | 3,387,738.88 |
+Open `.runtime/demo-001/evidence/report-recovered.html` and inspect
+`qualification.json` in the same directory. The harness exercises nominal
+processing, rejection and recovery. Use a new output directory for each run;
+existing evidence is not overwritten.
 
-The +20 EUR change is an intentional fixture revision on SITE_A, not duplicated
-orders. On-time quantity counts shipped units delivered by the promised timestamp;
-it is not order-level OTIF. No currency conversion is performed. Fixed fixture
-time means a correctly accepted report can be `STALE`. A rejected subsequent load
-exposes `DEGRADED` while preserving the last accepted dataset.
+For a guided reading of the outputs, use the [demonstration guide](docs/DEMO.md).
+The [runbook](docs/RUNBOOK.md) covers native setup, catalogue execution and recovery.
 
-The native run selected **one pytest test** (234 deselected) and separately ran
-six application scenarios. The catalogue run executed **33 offline safeguard tests**
-and six separate live-product scenarios. The catalogue review reconciled 30 remote
-tables, 170 column definitions, 22 lineage edges, two DQ results and two basic suites.
-Counts from different runs and test layers are not added together.
+## Evidence-backed capabilities
 
-## Engineering decisions
+| Capability | Reviewed result |
+|---|---|
+| Native processing | PostgreSQL 16, PySpark/Delta 4.0.1 and Dagster 1.11.16 executed on CircleCI |
+| Data reconciliation | 10,000 source records across five entities; 3,980 fact rows; counts, keys and monetary totals reconciled |
+| Recovery | Controlled interruption after target materialization; frozen input and target reuse; one accepted replacement generation |
+| Catalogue integration | OpenMetadata 1.12.0; two generations with 15 tables and 11 lineage edges each; quality results and server-side permission checks |
 
-- **Metadata-driven, not arbitrary execution:** reviewed profiles and contracts
-  select known operations. Extra compatible ingestion entities do not automatically
-  invent new Gold metrics or universal reporting.
-- **Explicit acceptance:** strict typing, source accounting, row/business checks
-  and independent count/key/Decimal reconciliation precede consumer publication.
-- **Recovery before retry:** frozen inputs, durable journals and metadata outbox
-  distinguish unknown effects, verified effects and conflicts.
-- **Verifiable boundaries:** every proof retains its commit, source profile and
-  exclusions; protocol emulation is never labelled real-product qualification.
+The [baseline register](docs/STATUS.md) identifies the exact executed commits.
+The [qualification guide](docs/QUALIFICATION.md) separates unit tests, integration
+scenarios, artifact review and remaining reservations.
 
-See [contracts](docs/CONTRACTS.md), [recovery](docs/RECOVERY.md),
-[governance](docs/GOVERNANCE.md), [security](docs/SECURITY.md) and
-[CircleCI controls](docs/CI_CIRCLECI.md).
+## Design boundaries and next steps
 
-## Evidence, limitations and roadmap
+I have deliberately qualified a bounded, single-host implementation before
+extending it to a managed platform. Distributed throughput, high availability,
+PostgreSQL/Delta disaster recovery and a combined native-to-catalogue run remain
+separate work. Fabric/Power BI currently has a read-only inventory preflight;
+its deployment and end-to-end qualification are on the [roadmap](docs/PROVIDER_GATES.md).
 
-Native G2 is accepted at `fc1a9286c937deb09b87b97524c6835b24a1d516`.
-Catalogue G3a is accepted at `cd09de03d658cb66d5aaa29a8ec677fd17a3f977` after
-reconciliation of supplied artifacts. Fourteen native JSON hashes and fifteen
-catalogue artifact hashes agree with their manifests. These are reviewed copied
-outputs, not signed provenance or an independent maintainer approval. Original
-browser-rendered JUnit bytes and actual credit accounting remain reservations.
+The custom contract format is not claimed to conform to ODCS. The business model
+is explicitly scoped to EUR sales fulfillment; on-time shipped units are not an
+order-level OTIF metric.
 
-Current limits include Spark `local[2]`, whole-source bounded capture before
-incremental selection, no CDC/delete capture, no multi-host writer fencing, no
-HA and no PostgreSQL/Delta restore. OpenMetadata roles were checked on a dedicated
-instance, not for multi-tenant namespace isolation. TLS/SSO, SDK/Airflow ingestion
-and product-UI review are not part of the catalogue gate.
+## Documentation and maintenance
 
-Fabric → Power BI remains a distinct planned integration requiring an explicitly
-authorized tenant, workspace, capacity, roles and budget. This portfolio preview
-does not silently remove that requirement or claim a deployed vendor solution.
-P01 remains active; the next portfolio projects are not bundled into this release.
+Start with the [documentation index](docs/README.md). Changes follow the
+[contribution guide](CONTRIBUTING.md), including source-revision evidence and
+regression checks. See [security](SECURITY.md) for demonstration boundaries and
+[licensing](docs/LICENSING.md) for the current reuse status. No open-source licence
+has been granted for the original code.
 
-## Publication and reuse
-
-This is a **portfolio preview**, not a production distribution. The
-[publication checklist](docs/PUBLICATION.md) separates functional evidence,
-repository disclosure and live-service deployment. CircleCI is the automatic CI
-route; optional GitHub Actions workflows are manual to avoid duplicate execution.
-No default-admin test service is intended for public Internet exposure.
-
-No open-source licence has been selected or granted for this original code.
-See [licensing and third-party scope](docs/LICENSING.md); dependency and container
-licences remain their own. Contributions should not contain employer/client code,
-real records, credentials or confidential infrastructure details.
-
-**Résumé français.** Projet de portfolio de Data Engineering : ingestion pilotée
-par contrats, qualité bloquante, réconciliation exacte, reporting sur la dernière
-génération acceptée et reprise contrôlée. Le moteur natif et l'intégration API
-OpenMetadata ont chacun des preuves d'exécution distinctes. Fabric/Power BI,
-la charge distribuée et l'exploitation en production ne sont pas présentés
-comme réalisés.
+Maintained by [Mehdi Safer](https://github.com/mehdisafer).

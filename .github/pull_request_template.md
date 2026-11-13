@@ -1,14 +1,28 @@
-## Scope
-Business outcome, affected contract/profile, and unchanged surfaces.
+## Purpose
 
-## Evidence
-Exact commit and environment; executed tests; receipts; data/target/consumer reconciliation.
+What problem does this change solve, and which execution profile does it affect?
 
-## Recovery and security
-Unknown effects, retries, publication pointer, watermark, role scope, secrets and source ownership.
+## Changes and operational impact
 
-## Not verified
-State native/provider/scale/installation gaps explicitly. A configured workflow is not a run.
+Describe behaviour, contract/schema, configuration, documentation and resource impacts.
 
-## Release decision
-No merge, deployment or access change is implied by this description. License and publication review remain explicit.
+## Verification
+
+| Check | Command / revision | Observed result |
+|---|---|---|
+| Targeted regression | | |
+| Repository / reference checks | | |
+| Integration checks, when applicable | | |
+
+State what was not run. Do not count skipped tests or emulators as live integration evidence.
+
+## Review
+
+- [ ] I reviewed the complete affected flow and linked documentation.
+- [ ] I added regression coverage where behaviour changes.
+- [ ] I preserved historical evidence and exact executed revisions.
+- [ ] I included only synthetic data and no credentials or confidential material.
+- [ ] I documented any side effect, resource cost and rollback procedure.
+- [ ] I did not introduce a visibility, billing, licensing or deployment change implicitly.
+
+Related issue:

@@ -1,0 +1,38 @@
+{
+  "schema_version": "ilc-qualification-baselines/1",
+  "reviewed_on": "2026-11-13",
+  "capabilities": [
+    {
+      "id": "native",
+      "name": "Native PostgreSQL / Spark / Delta / Dagster",
+      "state": "accepted",
+      "revision": "fc1a9286c937deb09b87b97524c6835b24a1d516",
+      "evidence": "docs/evidence/NATIVE_fc1a928_REVIEW.md",
+      "scope": "Bounded synthetic single-host data, recovery and reporting checks."
+    },
+    {
+      "id": "catalogue",
+      "name": "OpenMetadata API integration",
+      "state": "accepted",
+      "revision": "cd09de03d658cb66d5aaa29a8ec677fd17a3f977",
+      "evidence": "docs/evidence/OPENMETADATA_cd09de0_REVIEW.md",
+      "scope": "Real product API, metadata readback and role checks with reference inputs."
+    },
+    {
+      "id": "combined-native-catalogue",
+      "name": "Combined native-to-catalogue flow",
+      "state": "not-run",
+      "revision": null,
+      "evidence": "docs/PROVIDER_GATES.md",
+      "scope": "Separate successful runs do not establish one combined execution."
+    },
+    {
+      "id": "fabric-powerbi",
+      "name": "Fabric and Power BI",
+      "state": "planned",
+      "revision": null,
+      "evidence": "docs/PROVIDER_GATES.md",
+      "scope": "Read-only inventory exists; deployment and tenant qualification remain open."
+    }
+  ]
+}

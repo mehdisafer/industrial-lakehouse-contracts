@@ -32,6 +32,12 @@ jobs:
             python -m pip --version
             git rev-parse HEAD
       - run:
+          name: Check documentation, qualification baselines and tracked-file hygiene
+          command: python scripts/check_repository.py --output artifacts/repository/check.json
+      - store_artifacts:
+          path: artifacts/repository
+          destination: repository-quality
+      - run:
           name: Install existing Python package and tests
           command: python -m pip install -e '.[test]'
       - run:

@@ -1,44 +1,45 @@
-# Demonstration runbook
+# Operating runbook
 
-## Accepted checkpoints and safe scope
+## Prerequisites and target selection
 
-Native single-host functionality is accepted at `fc1a928`; real OpenMetadata API
-publication is accepted separately at `cd09de0`. Their evidence reviews are in
-[qualification](QUALIFICATION.md). Catalogue input is reference_sqlite. No combined
-run, production readiness or Fabric/Power BI qualification is implied.
+Run from a source checkout in a dedicated environment. The reference route requires
+Python 3.12/3.13 and no database server. Native and catalogue routes require their
+own dependencies and explicit opt-ins. Use synthetic fixtures, loopback services
+and new output directories; never substitute a shared operational database.
 
-Use disposable synthetic environments, fresh output paths and explicitly reviewed
-loopback destinations. Do not use a personal/client database, expose an admin
-service on the Internet, or repeat CI merely to inspect existing evidence.
+The [baseline register](STATUS.md) identifies reviewed execution revisions.
+The commands below reproduce a route; their presence does not certify a different
+platform or a future dependency resolution.
 
 ## Reference demonstration
 
-From the repository root in a new Python 3.12/3.13 virtual environment:
+After activating a virtual environment from the repository root:
 
 ```bash
 python -m pip install -e '.[test]'
+python scripts/check_repository.py
 python -m ilc.cli validate
 python -m pytest --junitxml=artifacts/junit.xml
 python scripts/qualify_reference.py --output .runtime/reference-new --rows 10000
 python scripts/qualify_recovery_governance.py --output .runtime/recovery-new --rows 10000
 ```
 
-Both scripts refuse existing output roots and stop their loopback services.
-Read `evidence/qualification.json` and actual per-scenario receipts, not just file
-existence. HTML is a frozen authorized response, not Power BI. `work/` and source
-databases are not public evidence.
+The scripts refuse existing output roots and stop their loopback services.
+Inspect `evidence/qualification.json`, individual receipts and reporting HTML.
+The recovery/governance script uses a catalogue protocol emulator; it does not
+replace the real-product qualification. [DEMO.md](DEMO.md) explains the outputs.
 
-For interactive use, run `ilc fixture`, `ilc source-api`, `ilc run` and
-`ilc report-api` as described in the CLI help. Generate disposable access tokens
-with `scripts/create_access_policy.py`, keep them outside Git, and pass an access
-policy file to the report API. `ilc status` is read-only and refuses a missing
-journal. Site filtering precedes totals; unauthorized global evidence/catalogue
-and cross-site records are denied.
+For interactive use, `ilc fixture`, `ilc source-api`, `ilc run` and `ilc report-api`
+expose explicit commands. Run `python -m ilc.cli --help` and the relevant command's
+help before use. Generate disposable reporting tokens with
+[scripts/create_access_policy.py](../scripts/create_access_policy.py), retain the
+access-policy file outside Git, and pass it to the reporting API. `ilc status`
+opens state read-only and refuses a missing journal.
 
 ## Native demonstration
 
-Required: a dedicated sandbox, Python 3.12, Java 17, package/JAR access and a new
-loopback database whose name starts with `ilc_demo`. Explicitly set
+Use Python 3.12, Java 17, working package/JAR resolution and a new loopback
+PostgreSQL database whose name starts with `ilc_demo`. Explicitly supply
 `ILC_ALLOW_NATIVE_DEMO=1`, `ILC_SOURCE_DSN` and `ILC_STATE_DSN` outside Git.
 
 ```bash
@@ -46,92 +47,68 @@ python -m pip install -e '.[native,test]'
 python scripts/qualify_native.py --output .runtime/native-new --rows 10000
 ```
 
-The pytest native case additionally requires `ILC_NATIVE_TESTS=1`; enabled native
-execution fails on missing prerequisites rather than downgrading to reference.
-The test covers nominal processing/replay; the separate harness covers all six
-scenarios, final-location Delta reads and controlled child-process exit/recovery.
+The native pytest additionally requires `ILC_NATIVE_TESTS=1`. Enabling it with
+missing prerequisites fails rather than silently falling back to reference.
+The separate native harness covers the six acceptance scenarios and final-path
+Delta proof. Existing source tables are refused, not truncated.
 
-A prepared alternative route is:
+A prepared alternative is `infra/compose.native.yml`; its instructions require
+`ILC_DEMO_DB_PASSWORD` outside Git and a disposable URL-safe password. That Compose
+route is not independently qualified by the CircleCI native result. Review its
+configuration before executing it.
 
-```bash
-# Supply ILC_DEMO_DB_PASSWORD outside Git; use a disposable URL-safe password.
-docker compose -f infra/compose.native.yml config --quiet
-docker compose -f infra/compose.native.yml run --build --rm qualify
-```
+## Real catalogue qualification
 
-Those alternative commands are not separately qualified by the CircleCI result.
-Existing source tables are refused, not truncated. Latest-GA JDK selection and
-minor image tags are not a fully immutable toolchain.
+The [OpenMetadata guide](OPENMETADATA_LIVE.md) describes the isolated Compose
+machine route, roles, six scenarios, evidence and cleanup. The admin fixture
+bootstraps prerequisites; distinct non-admin identities publish and reread metadata.
+Only the API is host-published, on loopback.
 
-## Real OpenMetadata
+The standalone [governance publisher](GOVERNANCE.md) builds a plan without contacting
+the server. Actual mutation requires `--publish`, `--allow-catalog-writes`, reviewed
+settings and `ILC_OPENMETADATA_TOKEN` outside Git. Its default source profile is
+reference; a combined native-to-catalogue execution has not been qualified.
 
-Use the separately scoped CircleCI catalogue route in
-[OPENMETADATA_LIVE.md](OPENMETADATA_LIVE.md). It starts actual OpenMetadata,
-PostgreSQL metadata storage and Elasticsearch in a fresh VM-owned Compose project.
-Only the API is host-published, on loopback. Generated JWT keys/passwords are not
-uploaded. Admin bootstraps fixtures; publication and independent readback use
-separate non-admin identities.
+## Failure triage
 
-The six live gates exercise identity, two-generation readback, replay, injected
-response loss after a real write, server-side denials and conflict preservation.
-The protocol emulator in the reference recovery script is not this product route.
+| Observation | First check | Recovery rule |
+|---|---|---|
+| Metadata validation fails | Contract/profile fields and declared model | Correct the input; do not initialise a runtime to bypass validation |
+| Candidate rejected | Row/schema/business rejection receipt | Preserve accepted data; fix the source and submit a distinct valid request |
+| Process stopped after target creation | Journal, frozen capture and target inventory | Resume the same bound request and reconcile existing effects |
+| Idempotency conflict | Key, upper bound, source/code/contract identity | Do not rebind the old key or overwrite its evidence |
+| Catalogue outcome uncertain | Durable outbox and exact remote readback | Reconcile; do not blindly recreate or delete |
+| Integrity failure | Artifact bytes, manifests and bound identities | Stop publication and investigate drift |
 
-For a separately authorized existing loopback catalogue, `scripts/governance.py`
-can generate a plan without contacting it. Mutation needs `--publish`,
-`--allow-catalog-writes`, reviewed settings and `ILC_OPENMETADATA_TOKEN` outside Git.
-The CLI defaults to a reference journal. Native-profile catalogue publication
-has not been qualified as a combined execution.
+Important codes include `INVALID_CONTRACT`, `IDEMPOTENCY_CONFLICT`,
+`CAPTURE_UNCERTAIN`, `SOURCE_ERROR`, `INTEGRITY_ERROR`, `STALE_BASE`, `BUSY`
+and `NATIVE_UNAVAILABLE`. Consult the actual exception class for its serialized
+code. Not every failure is retryable.
 
-## Evidence and retries
+## Evidence and retention
 
-Native: inspect attempt, Java/environment/dependencies, JUnit, verifier output,
-acceptance/recovery and final-path Delta proofs. Catalogue: inspect images,
-job-attempt, version, bootstrap, both generations' acceptance/plan/published/readback,
-HTTP traces, conflict proof and artifact manifest. Missing evidence is not success.
-Download original XML rather than copying its browser rendering; do not execute
-or silently normalize extension-added markup as an alleged original file.
+For native runs, inspect the attempt, environment, dependency receipt, native
+JUnit, verifier result, acceptance/recovery receipts and Delta readback proofs.
+For catalogue runs, inspect images, attempt/cleanup, version/bootstrap, both
+generations' plans/publications/readbacks, traces and the artifact manifest.
 
-The first native and catalogue attempts failed. Source-established fixes later
-succeeded, but the exact unread failed steps are not retrospectively invented.
-Read diagnostics before rerunning, increasing resources or changing strategy.
+Download original XML rather than copying a browser-modified rendering. Missing
+artifacts are not a pass. Keep credentials, policies and source databases out of
+Git and public artifact bundles. Do not rerun an unchanged expensive job merely
+to inspect results already produced.
 
-## CI and budgets
+Preserve candidate state after unknown outcomes. Before disposal, confirm ownership,
+exact paths/volumes and exported evidence. Catalogue cleanup stops only its job-owned
+services; no automatic shared-data deletion or Docker pruning is used. Reference
+backup/restore is same-path SQLite/filesystem recovery, not PostgreSQL/Delta DR.
+See [BACKUP_RESTORE.md](BACKUP_RESTORE.md).
 
-CircleCI is automatic reference CI. Native and catalogue each require their
-specific qualification branch or explicit pipeline parameter; never enable both.
-Setup synchronizations use `[skip ci]`. Optional GitHub Actions workflows are
-manual-only to avoid an automatic duplicate matrix.
+## Continuous integration
 
-Native command watchdog: 35 minutes. Catalogue: 25 minutes. Publication history
-scan in reference: 10 minutes. Stage limits are shorter where applicable.
-Provisioning and artifact transfer are outside the watchdogs; they are not account
-spending caps. Observed native/catalogue command times are 272/158 seconds; billed
-credits are unknown. No refill or plan change is configured.
+The [CI guide](CI_CIRCLECI.md) defines trigger discipline, artifact paths and command
+watchdogs. Native and catalogue runs are deliberate and separate. Actual credit
+consumption is not inferred from elapsed time.
 
-`PYTEST_DISABLE_PLUGIN_AUTOLOAD=1` avoids unrelated host plugins; project fixtures
-still load. Testsuite doctor is optional because it repeats tests; no observed
-doctor execution is claimed. See [CI_CIRCLECI.md](CI_CIRCLECI.md).
-
-## Retention and restoration
-
-Do not blanket-delete runtimes or volumes. Preserve candidate state after unknown
-outcomes, check ownership and export evidence before manual disposal. The catalogue
-exit handler stops only its job-owned services and restores the VM sysctl; its
-reviewed receipt reports both exit codes as zero, without volume deletion.
-
-Reference backup holds writer locks, captures SQLite consistently and excludes
-bearer policies. Restore refuses existing roots, unsafe archives and changed path
-identity. It does not convert PostgreSQL into SQLite or qualify PostgreSQL/Delta
-restore. Automatic staging/catalogue retention, power-loss durability and HA remain
-outside scope. See [BACKUP_RESTORE.md](BACKUP_RESTORE.md).
-
-## Error interpretation
-
-`INVALID_CONTRACT`: invalid metadata. `IDEMPOTENCY_CONFLICT`: key rebound to a
-different plan. `CAPTURE_UNCERTAIN`: unfinished source capture. `SOURCE_ERROR`:
-source/budget failure. `INTEGRITY_ERROR`: artifact drift. `STALE_BASE`: superseded
-attempt. `BUSY`: active writer. `NATIVE_UNAVAILABLE`: real backend absent.
-Consult actual exception classes for serialized codes; not every failure is retryable.
-
-Public exposure concerns repository content only. Follow [PUBLICATION.md](PUBLICATION.md)
-for history review and visibility; do not bind demo services to public interfaces.
+`PYTEST_DISABLE_PLUGIN_AUTOLOAD=1` is set in CI to isolate unrelated host plugins;
+project conftest fixtures still load. The project has no required third-party
+pytest plugin. An interrupted local run is not counted as a completed suite.
