@@ -1,70 +1,57 @@
-# Portfolio preview — disclosure checklist
+# Source-publication checklist
 
-## Target and authority
+## Scope
 
-The publication target is exactly `mehdisafer/industrial-lakehouse-contracts`.
-The owner requested public exposure on 13 November 2026. The intended result is
-a readable repository with reproducible synthetic demonstrations and evidence,
-not an Internet-facing database, catalogue admin endpoint or production service.
+I publish this repository to make its implementation, design decisions and
+execution evidence inspectable. Source visibility does not deploy the reporting
+API or OpenMetadata server and does not complete the Fabric/Power BI roadmap.
+The target repository is `mehdisafer/industrial-lakehouse-contracts`.
 
-Native G2 and catalogue G3a are accepted within their separate documented
-scopes. Fabric/Power BI remains open. A public preview is not completion of all
-provider work, a production-readiness statement or a new open-source licence.
+## Content review
 
-## Mandatory pre-publication checks
+Before changing visibility, I check the current tree and reachable history for
+credentials, confidential material and unsupported claims. Issues, PR discussions
+and any newly exposed logs/artifacts need their own review. Source databases,
+runtime policies and raw service dumps are not automatically publication material.
 
-- Review source, current documentation, reachable historical objects, issue/PR
-  text and any logs/artifacts that will become visible; exclude client material,
-  source databases, runtime policies, JWTs and personal infrastructure records.
-- Run `scripts/publication_gate.py` in the exact CircleCI checkout. Its Gitleaks
-  8.30.1 binary is size/SHA-256 checked against the pinned upstream release.
-  All remote heads/tags are fetched; unique Git blobs and commit/tag metadata
-  are exported under bounded byte/object limits and checked against Git identity.
-- Require the scanner's positive control to detect a newly generated synthetic
-  token-shaped value; require an actual zero-finding history scan with consistent
-  exit/result data. Missing Git history, scanner failure or findings block it.
-- Review any findings without putting secret values in logs, issues or commits.
-  The scanner publishes only rule/location/fingerprint summaries. Do not weaken
-  the gate or rewrite history merely to obtain a green status.
-- Retain the exact candidate SHA and successful reference status before merging.
-  Keep the accepted native/catalogue branches at their executed commits.
+The reference CI includes two complementary checks:
 
-The new scan is part of the reference job and has a ten-minute command watchdog.
-It does not start Spark or OpenMetadata and does not change a billing plan.
-Watchdogs do not constitute account-wide spend caps. Scanner rules are not a
-proof that every confidential item, vulnerability or licensing issue is absent.
+- `scripts/check_repository.py` checks tracked documentation paths/anchors,
+  generated qualification status and repository hygiene.
+- `scripts/publication_gate.py` scans reachable Git objects with a size/SHA-256
+  pinned Gitleaks binary and a synthetic positive control.
 
-## Public evidence selection
+A missing inventory, inconsistent scanner result or finding blocks the disclosure
+gate. Rule-based absence of findings is not a full security, privacy, ownership
+or dependency assessment. Review findings; do not weaken checks to obtain a green
+status. Keep redacted reports rather than publishing secret values.
 
-Publish the bounded reviews, synthetic metadata summaries and source identities.
-Do not automatically commit raw VM/service logs or browser-modified JUnit XML.
-The detailed catalogue review reconciles all fifteen supplied artifact hashes;
-the HTML is explicitly reconstructed rather than represented as a raw download.
-Actual credits and original XML bytes remain unverified, not silently invented.
+## Evidence and release review
 
-Historical issues and CI can include implementation failures; those are retained
-as engineering history rather than rewritten into false successes. The current
-README should explain the product and link the evidence, not expose credentials
-or advertise unfinished vendor features.
+The [baseline register](STATUS.md) and historical reviews distinguish accepted
+native/catalogue functionality from planned provider work. Evidence stays tied to
+its actual execution revision. Reconstructed JSON/HTML, browser-modified JUnit and
+observed-versus-unknown billing are described accurately in the reviews.
 
-## Visibility and verification
+Before release, verify the exact candidate's reference CI, complete affected
+documentation and merge state. Preserve the accepted integration branches and
+receipts. A documentation-only revision does not create a new runtime proof.
 
-Repository-content writes and PR merge do not change GitHub visibility. The
-connected tooling used for this work does not expose a visibility-setting action.
-Until the exact repository setting is changed and anonymous access is checked,
-public exposure must be reported as pending, even if main is ready.
+## Repository settings
 
-After the content review and CI gate, the owner-side setting is:
-`Settings → General → Danger Zone → Change repository visibility → Make public`.
-Verify the repository name before confirming. Then check the root README and
-source anonymously, and confirm `private=false` through the repository API.
-No GitHub Pages site or always-on service is implicitly created by this setting.
+Visibility remains a separate administrative decision. After the content review,
+change only this repository through GitHub Settings and verify anonymous access
+to the README and source. A merge, changelog entry or CI success is not evidence
+that the visibility setting has changed.
 
-Reference: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/managing-repository-settings/setting-repository-visibility
+Review the description, topics, contribution/security entry points and licence
+status as part of that release decision. No unspecified open-source licence is
+granted; see [LICENSING.md](LICENSING.md). GitHub Pages or an always-on service is
+not implicitly created by publishing source.
 
-## Retained exclusions
+## Release boundary
 
-No new licensing grant, tenant deployment, account subscription, billing-limit
-change, force-push, deletion of historical evidence or personal-workstation
-operation is part of this publication. The original provider roadmap is in
-[PROVIDER_GATES.md](PROVIDER_GATES.md).
+Keep demonstration services loopback-bound. Do not add public ingress, provider
+credentials, paid capacity, destructive cleanup or new licensing terms as a side
+effect of source publication. The [security guide](SECURITY.md) and
+[remaining gates](PROVIDER_GATES.md) define the operational boundaries.

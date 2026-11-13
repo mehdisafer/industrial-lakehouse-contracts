@@ -1,11 +1,31 @@
+# Local environments and caches
 .venv/
 __pycache__/
 *.pyc
 .pytest_cache/
 *.egg-info/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Generated runtime, reports and build output
 .runtime/
-.env
+artifacts/
+build/
+dist/
 *.log
 *.sqlite*
+
+# Local credentials; a names-only example may be committed
+.env
+.env.*
+!.env.example
 .local-secrets.json
-artifacts/
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Editor and OS files
+.DS_Store
+Thumbs.db

@@ -1,23 +1,24 @@
 # Changelog
 
-## Portfolio preview — 2026-11-13
+## 2026-11-13 — professional review and maintenance checks
 
-### Demonstrated
+- Reorganised the README and documentation around the business problem, reproducible demonstration, data model and architecture decisions.
+- Reconciled current native/catalogue acceptance across the operating and design guides; retained historical execution records.
+- Added a machine-readable qualification-baseline register and a generated status page.
+- Added offline repository checks and regression tests for documentation links/anchors, status drift and accidentally tracked runtime/sensitive paths.
+- Integrated the repository check into reference CI alongside the existing history disclosure gate.
+- Added contribution/security entry points, structured issue forms, a PR checklist and local-file ignore rules.
+
+Runtime algorithms, dependency versions, integration baselines, licensing and
+repository visibility are unchanged by this maintenance pass.
+
+## 2026-11-13 — initial portfolio preview
 
 - Contract-driven ingestion, blocking quality, exact reconciliation and accepted-generation reporting.
 - Native PostgreSQL / PySpark / Delta / Dagster single-host qualification at `fc1a928`.
-- Real OpenMetadata API publication, readback, role denials, replay and lost-response recovery at `cd09de0`.
-- Reviewed source/artifact identities, with original XML and billing reservations retained.
+- Separate real OpenMetadata API publication, readback, role denials, replay and lost-response recovery at `cd09de0`.
+- Reviewed artifact/source identities, with original XML and billing reservations retained.
+- Reachable-history disclosure gate and manually selected alternative GitHub Actions routes.
 
-### Publication work
-
-- A bounded reachable-history secret gate with a synthetic positive control.
-- CircleCI remains the automatic CI route; optional GitHub Actions reference execution is manual.
-- Consolidated walkthrough, architecture, qualification, operational and disclosure documentation.
-
-### Not included
-
-Fabric/Power BI deployment, distributed performance, HA, production security,
-PostgreSQL/Delta disaster recovery, catalogue UI hosting and a new project licence.
-Repository visibility is a separate setting; this changelog alone does not assert
-that the repository is already public.
+Fabric/Power BI deployment, distributed performance, HA, PostgreSQL/Delta disaster
+recovery and an open-source licence grant remain outside this preview.

@@ -1,6 +1,7 @@
 # Primary technical references
 
-Consulted for targeted implementation compatibility; not a new market survey.
+I use version-specific upstream contracts to review compatibility and API behaviour.
+Executed integration baselines are recorded separately in [STATUS.md](STATUS.md).
 
 - Spark 4.0.1 requirements: https://spark.apache.org/docs/4.0.1/
 - Delta/Spark compatibility: https://docs.delta.io/releases/
@@ -9,9 +10,11 @@ Consulted for targeted implementation compatibility; not a new market survey.
 - PostgreSQL transaction isolation: https://www.postgresql.org/docs/current/transaction-iso.html
 - Fabric read-only item inventory: https://learn.microsoft.com/en-us/rest/api/fabric/core/items/list-items
 
-Documentation review is not runtime qualification. Candidate native dependencies, remote access, service permissions and cloud functionality require a separate executed proof. No previous client implementation is used as a source template.
+Documentation supports implementation decisions; actual runtime and permission
+claims require execution evidence. The native and real catalogue runs have
+separate reviewed baselines. Fabric/Power BI remains unqualified.
 
-## Targeted reconciliation during this continuation — 12 November 2026
+## OpenMetadata API contract — reviewed 12 November 2026
 
 OpenMetadata is pinned to tag `1.12.0-release`, commit
 `caa14bfd42af6ec84464aa81815addd3e0cd2902`. The following primary files were read:
@@ -35,6 +38,16 @@ The protocol emulator is original test code, not vendored OpenMetadata; source
 inspection and this emulator do not validate a real server.
 
 Compatibility documentation reviewed: Spark 4.0.1 requires Java 17+, and the
-Delta matrix pairs Delta 4.0.x with Spark 4.0.x. These checks do not prove the
-entire Python/Dagster/PostgreSQL dependency set installs. The diagnostic receipt
-records missing native packages and package/JAR DNS failure in the actual host.
+Delta matrix pairs Delta 4.0.x with Spark 4.0.x. Compatibility documentation alone does not establish installation or execution.
+The [native review](evidence/NATIVE_fc1a928_REVIEW.md) records the versions actually
+installed and exercised on the accepted CI run.
+
+## Repository maintenance references
+
+- [GitHub issue-form schema](https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/syntax-for-issue-forms)
+- [GitHub issue-form validation](https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/common-validation-errors-when-creating-issue-forms)
+- [Python URL parsing and validation boundaries](https://docs.python.org/3.13/library/urllib.parse.html)
+
+The repository checker uses a deliberately limited Markdown subset and makes no
+external URL requests. Its supported behaviour is defined by regression tests,
+not by a claim of full GitHub-flavoured Markdown conformance.

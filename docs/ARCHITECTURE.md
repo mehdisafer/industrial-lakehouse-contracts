@@ -1,76 +1,136 @@
-# Architecture and implementation decisions
+# Architecture and design decisions
 
-## Data and control paths
+## System boundary
+
+I separate the **data plane** that materialises a candidate from the **control
+plane** that decides whether consumers may use it. The implementation targets
+reproducible, bounded runs on a single host. It has two execution profiles and a
+separately qualified catalogue publisher; [STATUS.md](STATUS.md) records their
+exact execution baselines.
+
+| Responsibility | Implementation |
+|---|---|
+| Contract and execution validation | [contracts.py](../src/ilc/contracts.py), JSON contracts/profiles |
+| Database, HTTP and CSV capture | [sources.py](../src/ilc/sources.py) |
+| Immutable capture/candidate artifacts | [storage.py](../src/ilc/storage.py) |
+| Typing, merge and business model | [transform.py](../src/ilc/transform.py), [native.py](../src/ilc/native.py) |
+| Admission, acceptance and watermarks | [pipeline.py](../src/ilc/pipeline.py), [journal.py](../src/ilc/journal.py) |
+| Native job orchestration | [orchestration.py](../src/ilc/orchestration.py) |
+| Consumer scope and reporting | [reporting.py](../src/ilc/reporting.py), [report_api.py](../src/ilc/report_api.py) |
+| Metadata publication and outbox | [governance.py](../src/ilc/governance.py) |
+
+## End-to-end flow
 
 ```text
-Synthetic snapshot manifest
-  |-- database: customers, orders, order_lines (one read transaction)
-  |-- CSV: products
-  `-- HTTP: shipments (snapshot ID, total, cursor, fields, page/byte budgets)
-        |
-  immutable Bronze + finalized inventory
-        |
-  strict contract -> typed Silver -> blocking row/business checks
-        |
-  reviewed SQL Gold -> independent Decimal/key/count reconciliation
-        |
-  attempt-specific candidate staging -> inventory -> atomic directory rename
-        |
-  native-only: reread final-path Delta, reconcile and persist bound proof
-        |
-  journal transaction: accepted pointer + watermarks + evidence receipt
-        |
-  read-only consumer -> verify accepted digest -> scope -> aggregate -> report
+Database transaction + CSV + bounded HTTP pagination
+    -> frozen Bronze and source inventory
+    -> strict typing and incremental Silver merge
+    -> blocking row, schema and business checks
+    -> reviewed Gold model
+    -> independent count, key and Decimal reconciliation
+    -> candidate staging and immutable target
+    -> native profile: final-path Delta readback and bound proof
+    -> journal transaction: accepted pointer + watermarks + receipt
+    -> authorised report / separate metadata publication
 ```
 
-The admission key is distinct from attempt count. A key is bound to its upper bound, metadata, source locator, executing package bytes and runtime versions. An existing key with a changed request is rejected. A promoted dataset is immutable; retries cannot replace it with new live input.
+An admission key is bound to a source locator, upper timestamp, metadata,
+implementation bytes and runtime versions. It is not an attempt number. Reusing
+that key for another request fails. A committed candidate does not become visible
+until the journal accepts it.
 
-## ADR-001: two explicit execution profiles
+## ADR-001 — explicit reference and native profiles
 
-The phase-2 design calls for PostgreSQL, Spark, Delta, Dagster and Fabric/Power BI. Those capabilities were unavailable in the current sandbox and dependency downloads failed. Rather than falsely label SQLite as a lakehouse qualification, this increment implements a named `reference_sqlite/reference_json` profile and a separate native adapter.
+**Decision.** Keep one business contract with distinct reference and native
+execution profiles. Reference uses SQLite/JSON; native uses PostgreSQL,
+Spark SQL/Delta and an in-process Dagster job.
 
-The reference proves business/control semantics with actual SQLite, files, HTTP and process behavior. The native profile must still be installed and executed. Its driver-bounded inputs and reference reconciliation do not become a distributed-scale engine just because Spark is present. No gate for native/platform acceptance is closed by reference tests.
+**Reason.** Fast, deterministic control-path tests and actual engine integration
+exercise different risks. Neither should be silently substituted for the other.
 
-## ADR-002: acceptance is the sole publication authority
+**Trade-off.** The native adapter retains bounded driver-side input and independent
+reference reconciliation. Using Spark does not by itself establish distributed
+scale. Native functionality was executed and reviewed at `fc1a928`; the
+[evidence record](evidence/NATIVE_fc1a928_REVIEW.md) defines the tested boundary.
 
-Filesystem commit and state commit do not share a transaction. Candidate data are durably stored first. The state journal then commits the accepted pointer, watermarks and receipt together. A crash between the two leaves a candidate, not a reportable generation. On retry, Bronze is reused, outputs are recomputed and the existing target is checked before publication.
+## ADR-002 — the journal is the publication authority
 
-Compare-and-swap prevents an older attempt based on an earlier generation from replacing a newer accepted generation. The reference lock is process-owned, single-host. Native operation adds a PostgreSQL advisory lock. No lock prevents malicious host administrators from modifying files.
+**Decision.** Store and verify immutable candidate data first; commit the accepted
+pointer, watermarks and receipt together in the state journal afterwards.
 
-Native Spark writes to an attempt-specific staging directory. A surviving worker has no authority to publish the accepted pointer or rename a candidate. Post-move Delta re-reading is now implemented as a mandatory publication gate, with an immutable proof outside the target inventory. A failure prevents the acceptance/watermark transaction. This code is unit-tested with an injected verifier, not a live Spark qualification. Staging cleanup is not automated; native process-tree behavior and post-move reads still require the actual engine run.
+**Reason.** The filesystem and state database do not share a transaction. A crash
+between their commits must leave an unaccepted candidate, not a partial report.
 
-## ADR-003: fixed business model, extensible entity ingestion
+**Trade-off.** Recovery needs explicit reconciliation and retained staging artifacts.
+A process-owned lock protects the reference writer; native uses a PostgreSQL
+advisory lock. Compare-and-swap rejects a publication based on a superseded
+accepted generation. These controls are not multi-host filesystem fencing.
 
-A strict contract selects only `sales_fulfillment_v1`. Extra compatible entities can enter Bronze, Silver and the catalog by metadata alone; the qualification adds `warehouses`. This does **not** automatically generate new business metrics or a universal report for arbitrary entities. A new Gold model requires reviewed code and tests.
+Native acceptance additionally rereads all ten version-pinned Delta tables at
+their final path after target relocation. A failed readback blocks the journal
+transaction. The controlled native crash occurs after synchronous materialisation
+and Spark shutdown, not during an in-flight executor operation.
 
-## ADR-004: source fidelity before incremental merge
+## ADR-003 — metadata-driven ingestion, reviewed business transformations
 
-The fixture's database, HTTP server and files expose a pinned synthetic source vector. Count/digest agreement is required before processing. Database tables are read in one transaction; HTTP pages must retain the same snapshot, fields, count and as-of timestamp.
+**Decision.** Contracts declare field semantics, keys, ownership and classification;
+profiles declare source mappings and resource bounds. A registry selects reviewed
+transformation code.
 
-Full-source bounded capture is deliberate for the first demonstration. Incremental bounds are applied to typed records; ties are inclusive and a bounded lookback admits late updates. Equal-key/equal-timestamp conflicting payloads are rejected. Updates older than the lookback and physical deletes require separate reconciliation/CDC; they are not covered.
+**Reason.** Configuration should support entity onboarding without becoming an
+arbitrary-code execution channel.
 
-## ADR-005: native provider claims require provider evidence
+**Trade-off.** A compatible additional entity can enter Bronze, Silver and the
+catalogue through metadata. It does not automatically create a new fact model or
+report metric. [DATA_MODEL.md](DATA_MODEL.md) defines the implemented business grain.
 
-Local table, lineage and quality JSON are real output artifacts. A metadata-only publisher is now implemented against the pinned OpenMetadata 1.12.0 API. Its emulator tests exercise HTTP and delivery logic, not the product itself. A Fabric inventory call is read-only connectivity metadata, not a deployed pipeline or Power BI report. `NOT_RUN` is retained until an authorized account and the corresponding end-to-end validation exist.
+## ADR-004 — capture fidelity before incremental selection
 
-## Deliberate operational limits
+**Decision.** Capture a bounded source snapshot before applying inclusive watermark
+bounds and a lookback window to typed records.
 
-No unbounded retry loop, arbitrary shell/SQL from metadata, hidden network fallback, automatic deletion, scheduler activation or personal-machine operation exists. Reference loopback restrictions are application checks, not a kernel egress sandbox. Java/Maven dependency resolution on the native profile may use the public network; that native installation path is not an air-gapped guarantee.
+**Reason.** Snapshot identity, source counts and frozen input make replay and
+interrupted-publication recovery inspectable. HTTP pagination must retain its
+snapshot, fields, count and as-of timestamp.
 
-## ADR-006: metadata effects have their own durable outbox
+**Trade-off.** This is not source-pushdown optimisation or CDC. Older updates and
+physical deletions require explicit future handling. Independently operated source
+systems are not covered by a global transaction.
 
-The accepted immutable dataset is the export source; a request never grants the
-catalog permission to alter the data pipeline. A generation change during export
-construction is rejected. Intent and readback state are persisted separately from
-the data acceptance. Unknown effects are reconciled, not silently reissued. The
-loopback token and pre-existing service/team/tag permissions are external to the
-contract. The native/provider qualification status is never inherited from the
-reference source profile or emulator.
+## ADR-005 — metadata delivery has its own outbox
 
-## ADR-007: backup the reference state without changing identity
+**Decision.** Build the export from a verified accepted generation. Record intent
+before a catalogue mutation and verify remote state afterwards.
 
-The reference backup holds both writer locks and captures SQLite consistently,
-immutable batch artifacts and governance intent. Credentials and the remote
-catalog are out of scope. Restoration requires the missing original root, checks
-all archive/accepted-state evidence and keeps an interrupted restore unavailable.
-No silent path rebase or PostgreSQL-to-SQLite conversion is allowed.
+**Reason.** An absent response does not tell the caller whether a mutation happened.
+Recovery reconciles the existing object instead of blindly issuing another create.
+
+**Trade-off.** There is one catalogue writer per namespace, without distributed
+fencing. Each accepted generation gets an immutable catalogue database, so retention
+is a separate concern. OpenMetadata API/RBAC behaviour was qualified at `cd09de0`
+with reference inputs; this does not claim a combined Spark-to-catalogue run.
+See [governance](GOVERNANCE.md) and [live qualification](OPENMETADATA_LIVE.md).
+
+## ADR-006 — preserve identity during reference restore
+
+**Decision.** Back up SQLite consistently while holding writer locks, retain
+immutable batch/outbox state, and restore only into the absent original root.
+
+**Reason.** Rebinding paths or converting state backends would change the identity
+being recovered and invalidate the original acceptance evidence.
+
+**Trade-off.** Same-path reference recovery is implemented; migration, PostgreSQL
+restore and Delta disaster recovery remain separate qualifications.
+See [backup and restore](BACKUP_RESTORE.md).
+
+## Trust and operational boundaries
+
+Metadata cannot grant arbitrary SQL, shell or Python execution. Loopback URL checks,
+path validation, response budgets and application roles reduce the demonstration's
+exposure; they are not an OS sandbox. A host/database administrator remains outside
+the consumer security boundary. Native package/JAR resolution uses external
+repositories and is not air-gapped.
+
+I keep deployment claims tied to executed environments. Fabric inventory is not a
+Fabric pipeline, and HTML reporting is not Power BI. The remaining platform work
+is explicit in [PROVIDER_GATES.md](PROVIDER_GATES.md).
