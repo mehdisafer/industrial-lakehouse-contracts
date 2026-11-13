@@ -52,6 +52,13 @@ jobs:
       - store_test_results:
           path: test-results
       - run:
+          name: Audit reachable Git history before public disclosure
+          no_output_timeout: 6m
+          command: timeout --signal=TERM --kill-after=30s 10m python scripts/publication_gate.py --output artifacts/publication
+      - store_artifacts:
+          path: artifacts/publication
+          destination: publication-review
+      - run:
           name: Execute reference synthetic 10000-row end-to-end scenario
           command: python scripts/qualify_reference.py --output .runtime/circleci-reference --rows 10000
       - run:
