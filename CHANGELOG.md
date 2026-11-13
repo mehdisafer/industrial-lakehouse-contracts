@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-11-13 — validator hardening and auditable reference CI
+
+- Fixed reproduced documentation-check false successes for code-labelled references, malformed HTTP destinations and revision substrings; resolved heading-ID collisions.
+- Removed rejected URL/label payloads from diagnostics and added bounded regular-file reads for metadata/documents.
+- Aligned tracked-file checks and ignore rules for test results, local SQLite/database outputs, caches and private-key filenames.
+- Added test collection bound to the checkout, exact original-JUnit reconciliation and a mandatory reference/recovery evidence verifier.
+- Added checks for missing/duplicate tests, unexpected skips, altered source/receipt identities, reporting totals and retained archive integrity.
+- Documented parser boundaries, artifacts and failure handling without changing the application algorithms, dependency versions or historical integration baselines.
+
 ## 2026-11-13 — professional review and maintenance checks
 
 - Reorganised the README and documentation around the business problem, reproducible demonstration, data model and architecture decisions.
@@ -10,7 +19,7 @@
 - Added contribution/security entry points, structured issue forms, a PR checklist and local-file ignore rules.
 
 Runtime algorithms, dependency versions, integration baselines, licensing and
-repository visibility are unchanged by this maintenance pass.
+repository visibility are unchanged by these maintenance passes.
 
 ## 2026-11-13 — initial portfolio preview
 
