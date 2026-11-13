@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+.runtime/
+.env
+*.log
+*.sqlite*
+.local-secrets.json
+artifacts/

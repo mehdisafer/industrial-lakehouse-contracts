@@ -1,0 +1,7 @@
+# One Python test suite; native dependencies are not present in this job.
+# No options are configured: impact, dynamic splitting and auto-rerun remain off.
+name: p01 reference tests
+discover: find tests -maxdepth 1 -type f -name 'test_*.py' | sort
+run: python -m pytest --junitxml="<< outputs.junit >>" << test.atoms >>
+outputs:
+  junit: test-results/junit.xml

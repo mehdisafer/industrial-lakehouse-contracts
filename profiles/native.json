@@ -1,0 +1,44 @@
+{
+  "schema_version": "ilc-execution/1",
+  "profile_id": "native-local",
+  "engine": "native_spark",
+  "target": "delta_spark",
+  "state": "postgresql",
+  "source_database": "postgresql",
+  "source_schema": "ilc_demo",
+  "rest_url_env": "ILC_API_URL",
+  "entity_sources": {
+    "customers": {
+      "kind": "database",
+      "location": "customers",
+      "mode": "FULL"
+    },
+    "products": {
+      "kind": "csv",
+      "location": "products.csv",
+      "mode": "FULL"
+    },
+    "orders": {
+      "kind": "database",
+      "location": "orders",
+      "mode": "INCREMENTAL"
+    },
+    "order_lines": {
+      "kind": "database",
+      "location": "order_lines",
+      "mode": "INCREMENTAL"
+    },
+    "shipments": {
+      "kind": "rest",
+      "location": "shipments",
+      "mode": "INCREMENTAL"
+    }
+  },
+  "lookback_seconds": 300,
+  "max_rows_per_entity": 30000,
+  "max_total_rows": 100000,
+  "max_pages": 1000,
+  "page_size": 137,
+  "freshness_seconds": 3600,
+  "egress": "loopback_only"
+}

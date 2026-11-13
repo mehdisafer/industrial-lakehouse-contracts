@@ -1,0 +1,100 @@
+# Original minimal CI deployment; versions/API contract from upstream 1.12.0.
+# No ingress, host data mounts, SDK ingestion or external database is used.
+x-server-environment: &server_environment
+  OPENMETADATA_CLUSTER_NAME: ilc_g3_disposable
+  SERVER_PORT: "8585"
+  SERVER_ADMIN_PORT: "8586"
+  LOG_LEVEL: WARN
+  REQUEST_LOG_LEVEL: ERROR
+  AUTHORIZER_CLASS_NAME: org.openmetadata.service.security.DefaultAuthorizer
+  AUTHORIZER_REQUEST_FILTER: org.openmetadata.service.security.JwtFilter
+  AUTHORIZER_ADMIN_PRINCIPALS: '[admin]'
+  AUTHORIZER_PRINCIPAL_DOMAIN: open-metadata.org
+  AUTHORIZER_ALLOWED_REGISTRATION_DOMAIN: '["open-metadata.org"]'
+  AUTHORIZER_ENABLE_SMTP: "false"
+  AUTHENTICATION_PROVIDER: basic
+  AUTHENTICATION_ENABLE_SELF_SIGNUP: "false"
+  AUTHENTICATION_PUBLIC_KEYS: '[http://localhost:8585/api/v1/system/config/jwks]'
+  AUTHENTICATION_JWT_PRINCIPAL_CLAIMS: '[email,preferred_username,sub]'
+  RSA_PUBLIC_KEY_FILE_PATH: /ilc-keys/public_key.der
+  RSA_PRIVATE_KEY_FILE_PATH: /ilc-keys/private_key.der
+  JWT_KEY_ID: ilc-disposable-ci-key
+  JWT_ISSUER: open-metadata.org
+  DB_DRIVER_CLASS: org.postgresql.Driver
+  DB_SCHEME: postgresql
+  DB_HOST: db
+  DB_PORT: "5432"
+  DB_USER: openmetadata_user
+  DB_USER_PASSWORD: ${ILC_OM_DB_PASSWORD:?Disposable DB password required}
+  OM_DATABASE: openmetadata_db
+  DB_PARAMS: allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
+  ELASTICSEARCH_HOST: search
+  ELASTICSEARCH_PORT: "9200"
+  ELASTICSEARCH_SCHEME: http
+  SEARCH_TYPE: elasticsearch
+  PIPELINE_SERVICE_CLIENT_ENABLED: "false"
+  SECRET_MANAGER: db
+  FERNET_KEY: ${ILC_OM_FERNET_KEY:?Disposable Fernet key required}
+  OPENMETADATA_HEAP_OPTS: -Xms512m -Xmx2g
+
+services:
+  db:
+    image: postgres:16
+    restart: "no"
+    mem_limit: 512m
+    environment:
+      POSTGRES_DB: openmetadata_db
+      POSTGRES_USER: openmetadata_user
+      POSTGRES_PASSWORD: ${ILC_OM_DB_PASSWORD:?Disposable DB password required}
+    volumes:
+      - metadata_db:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U openmetadata_user -d openmetadata_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+  search:
+    image: docker.elastic.co/elasticsearch/elasticsearch:9.3.0
+    restart: "no"
+    mem_limit: 2g
+    environment:
+      discovery.type: single-node
+      cluster.name: ilc_g3_disposable
+      ES_JAVA_OPTS: -Xms1g -Xmx1g
+      xpack.security.enabled: "false"
+      xpack.ml.enabled: "false"
+    volumes:
+      - metadata_search:/usr/share/elasticsearch/data
+    healthcheck:
+      test: [CMD-SHELL, "curl -fsS 'http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=2s' >/dev/null"]
+      interval: 5s
+      timeout: 4s
+      retries: 40
+  migrate:
+    image: docker.getcollate.io/openmetadata/server:1.12.0
+    restart: "no"
+    mem_limit: 4g
+    command: ./bootstrap/openmetadata-ops.sh migrate
+    environment: *server_environment
+    volumes:
+      - ${ILC_OM_KEYS:?Ephemeral key directory required}:/ilc-keys:ro
+    depends_on:
+      db:
+        condition: service_healthy
+      search:
+        condition: service_healthy
+  server:
+    image: docker.getcollate.io/openmetadata/server:1.12.0
+    restart: "no"
+    mem_limit: 4g
+    environment: *server_environment
+    volumes:
+      - ${ILC_OM_KEYS:?Ephemeral key directory required}:/ilc-keys:ro
+    ports:
+      - 127.0.0.1:8585:8585
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+volumes:
+  metadata_db: {}
+  metadata_search: {}

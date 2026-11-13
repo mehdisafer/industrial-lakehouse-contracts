@@ -1,0 +1,170 @@
+# P01: reference by default; native/catalogue qualifications are separately scoped.
+version: 2.1
+
+parameters:
+  run_testsuite_doctor:
+    type: boolean
+    default: false
+  run_native:
+    type: boolean
+    default: false
+
+  run_catalogue:
+    type: boolean
+    default: false
+
+jobs:
+  reference:
+    docker:
+      - image: cimg/python:3.13
+    resource_class: medium
+    environment:
+      PYTHONUTF8: "1"
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD: "1"
+      TZ: UTC
+    steps:
+      - checkout
+      - run:
+          name: Record toolchain and checked-out revision
+          command: |
+            python --version
+            python -m pip --version
+            git rev-parse HEAD
+      - run:
+          name: Install existing Python package and tests
+          command: python -m pip install -e '.[test]'
+      - run:
+          name: Compile Python source and tests
+          command: python -m compileall -q src tests scripts fabric
+      - run:
+          name: Validate metadata contracts
+          command: python -m ilc.cli validate
+      - when:
+          condition: << pipeline.parameters.run_testsuite_doctor >>
+          steps:
+            - run:
+                name: Doctor - verify testsuite discovery, execution and JUnit
+                command: circleci testsuite doctor "p01 reference tests"
+      - run:
+          name: Run repository pytest regression suite with Smarter Testing
+          command: circleci testsuite run "p01 reference tests"
+      - store_test_results:
+          path: test-results
+      - run:
+          name: Audit reachable Git history before public disclosure
+          no_output_timeout: 6m
+          command: timeout --signal=TERM --kill-after=30s 10m python scripts/publication_gate.py --output artifacts/publication
+      - store_artifacts:
+          path: artifacts/publication
+          destination: publication-review
+      - run:
+          name: Execute reference synthetic 10000-row end-to-end scenario
+          command: python scripts/qualify_reference.py --output .runtime/circleci-reference --rows 10000
+      - run:
+          name: Exercise reference recovery and governance protocol
+          command: python scripts/qualify_recovery_governance.py --output .runtime/circleci-recovery --rows 10000
+      - store_artifacts:
+          path: test-results
+          destination: test-results
+      - store_artifacts:
+          path: .runtime/circleci-reference/evidence
+          destination: reference-evidence
+      - store_artifacts:
+          path: .runtime/circleci-recovery/evidence
+          destination: recovery-evidence
+
+  native:
+    docker:
+      # Java 17 is installed from a checksum-verified official archive, not the browsers Java 11.
+      - image: cimg/python:3.12
+      - image: postgres:16
+        environment:
+          POSTGRES_DB: ilc_demo
+          POSTGRES_USER: ilc_demo
+          POSTGRES_PASSWORD: ephemeral-ci-only
+    resource_class: large
+    parallelism: 1
+    environment:
+      PYTHONUTF8: "1"
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD: "1"
+      PIP_DISABLE_PIP_VERSION_CHECK: "1"
+      PIP_DEFAULT_TIMEOUT: "30"
+      ILC_ALLOW_NATIVE_DEMO: "1"
+      ILC_NATIVE_TESTS: "1"
+      ILC_SOURCE_DSN: postgresql://ilc_demo:ephemeral-ci-only@127.0.0.1:5432/ilc_demo
+      ILC_STATE_DSN: postgresql+psycopg://ilc_demo:ephemeral-ci-only@127.0.0.1:5432/ilc_demo
+      SPARK_LOCAL_IP: 127.0.0.1
+      OMP_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
+      TZ: UTC
+    steps:
+      - checkout
+      - run:
+          name: Native qualification - bounded install, real services and evidence gate
+          no_output_timeout: 8m
+          command: timeout --signal=TERM --kill-after=30s 35m bash scripts/run_circleci_native.sh
+      - store_test_results:
+          path: artifacts/native/tests
+      - store_artifacts:
+          path: artifacts/native
+          destination: native-diagnostics
+      - store_artifacts:
+          path: .runtime/circleci-native-qualification/evidence
+          destination: native-evidence
+
+
+  catalogue:
+    machine:
+      image: ubuntu-2404:current
+    resource_class: large
+    parallelism: 1
+    environment:
+      ILC_ALLOW_OPENMETADATA_DEMO: "1"
+      PYTHONUTF8: "1"
+      TZ: UTC
+    steps:
+      - checkout
+      - run:
+          name: Real OpenMetadata - bounded deployment, roles and accepted metadata
+          no_output_timeout: 8m
+          command: timeout --signal=TERM --kill-after=60s 25m bash scripts/run_circleci_openmetadata.sh
+      - store_test_results:
+          path: artifacts/openmetadata
+      - store_artifacts:
+          path: artifacts/openmetadata
+          destination: openmetadata-diagnostics
+      - store_artifacts:
+          path: .runtime/openmetadata-live/evidence
+          destination: openmetadata-evidence
+
+workflows:
+  reference-qualification:
+    unless:
+      or:
+        - << pipeline.parameters.run_native >>
+        - << pipeline.parameters.run_catalogue >>
+        - equal: ["qualify/p01-native-20261112", << pipeline.git.branch >>]
+        - equal: ["qualify/p01-openmetadata-20261113", << pipeline.git.branch >>]
+        - equal: ["circleci-project-setup", << pipeline.git.branch >>]
+    jobs:
+      - reference
+  native-qualification:
+    when:
+      and:
+        - not: << pipeline.parameters.run_catalogue >>
+        - or:
+            - << pipeline.parameters.run_native >>
+            - equal: ["qualify/p01-native-20261112", << pipeline.git.branch >>]
+    jobs:
+      - native
+  catalogue-qualification:
+    when:
+      and:
+        - not: << pipeline.parameters.run_native >>
+        - or:
+            - << pipeline.parameters.run_catalogue >>
+            - equal: ["qualify/p01-openmetadata-20261113", << pipeline.git.branch >>]
+    jobs:
+      - catalogue
