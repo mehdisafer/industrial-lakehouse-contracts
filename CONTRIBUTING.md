@@ -10,7 +10,13 @@ replacement explicitly.
 Open an issue describing the problem, the affected execution profile and the
 expected outcome. Use synthetic reproductions only. Do not include credentials,
 real records, client schemas or confidential service addresses. Check
-[licensing status](docs/LICENSING.md) before proposing third-party material.
+[licensing and third-party scope](docs/LICENSING.md) before proposing third-party material.
+
+The original project is licensed under the [MIT License](LICENSE). By submitting
+a contribution for inclusion, you offer it under the same MIT terms and confirm
+that you have the rights needed to do so. You retain your copyright. Identify
+third-party material and preserve its applicable notices; do not relicense it
+merely by copying it into this repository.
 
 For a defect, provide the source revision, Python/runtime versions, command,
 expected result, observed result and a sanitised excerpt. For a feature, explain
@@ -74,7 +80,7 @@ commands and exact results rather than a generic "tested" statement.
 Separate a control-path unit test, a real service integration, an artifact review
 and a performance benchmark. Avoid adding their counts or transferring evidence
 between profiles. Do not introduce automatic destructive cleanup, a paid resource,
-a public listener or a new licence grant as a side effect.
+a public listener or a change of licence terms as an unrelated side effect.
 
 The automatic CircleCI reference route includes repository and history checks,
 a collected test inventory, and final reconciliation of the original JUnit and

@@ -109,8 +109,13 @@ order-level OTIF metric.
 
 Start with the [documentation index](docs/README.md). Changes follow the
 [contribution guide](CONTRIBUTING.md), including source-revision evidence and
-regression checks. See [security](SECURITY.md) for demonstration boundaries and
-[licensing](docs/LICENSING.md) for the current reuse status. No open-source licence
-has been granted for the original code.
+regression checks. See [security](SECURITY.md) for demonstration boundaries.
+
+## Licence
+
+I release the original project code and its associated documentation under the
+[MIT License](LICENSE). Preserve its copyright and permission notice when copying
+or redistributing substantial portions. Dependencies and external products retain
+their own terms; see [licensing and third-party scope](docs/LICENSING.md).
 
 Maintained by [Mehdi Safer](https://github.com/mehdisafer).
